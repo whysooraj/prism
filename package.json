@@ -16,6 +16,8 @@
   "scripts": {
     "build": "tsc",
     "start": "tsx src/index.ts",
+    "serve": "tsx src/http.ts",
+    "start:http": "node dist/http.js",
     "test": "node --test"
   },
   "dependencies": {

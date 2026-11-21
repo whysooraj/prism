@@ -118,6 +118,37 @@ Prism adheres to both the **Model Context Protocol (MCP)** and the open **Agent 
 
 ---
 
+## ChatGPT Custom Actions Setup (Mobile & Web)
+
+Prism natively supports ChatGPT Custom Actions so you can inspect live websites and foreign codebases on iOS, Android, and chatgpt.com.
+
+### 1. Run the HTTP Server
+Locally via tunnel:
+```bash
+# Start the HTTP server on port 3000
+npm run start:http
+
+# Expose via free tunnel (e.g. Cloudflare Tunnel or ngrok)
+cloudflared tunnel --url http://localhost:3000
+# or: ngrok http 3000
+```
+Or deploy the included `Dockerfile` directly to Fly.io, Railway, or any VPS.
+
+### 2. Configure in ChatGPT
+1. Go to [ChatGPT GPT Editor](https://chatgpt.com/gpts/editor).
+2. Under **Configure**, click **Create new action**.
+3. Under **Schema**, paste the contents of [`openapi.json`](openapi.json) (or click "Import from URL" pointing to `https://your-domain.com/openapi.json`).
+4. Set Authentication to **None** (or configure API key headers if preferred).
+5. Save the GPT.
+
+### 3. Usage on iPhone, Android, & Web
+Prompt your Custom GPT from any mobile device:
+* *"Inspect https://news.ycombinator.com and give me the WCAG contrast breakdown and layout wireframe."*
+* *"How does the routing algorithm work in https://github.com/career-ops-hq/career-ops?"*
+ChatGPT automatically calls your hosted Prism endpoints and renders the grounded analysis.
+
+---
+
 ## Manual Configuration
 
 If you prefer manual setup rather than the one-line installer:

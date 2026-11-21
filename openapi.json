@@ -1,0 +1,223 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Prism Context API",
+    "description": "Deterministic web layout inspection and structural repository intelligence engine for ChatGPT and AI assistants.",
+    "version": "0.1.0"
+  },
+  "servers": [
+    {
+      "url": "https://YOUR_PRISM_HOST.com",
+      "description": "Prism Production or Tunnel Server"
+    }
+  ],
+  "paths": {
+    "/api/inspect-website": {
+      "post": {
+        "summary": "Inspect website layout and design tokens",
+        "operationId": "inspectWebsite",
+        "description": "Inspects a website URL using headless browser to extract exact CSS box model, color palette, typography scale, WCAG contrast audit score, and vector wireframe SVG.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "The full HTTP/HTTPS URL of the website to inspect."
+                  },
+                  "includeWireframeSvg": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Whether to return a vector wireframe SVG schematic."
+                  }
+                },
+                "required": ["url"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Website inspection metrics, design critique, and tokens",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/index-repo": {
+      "post": {
+        "summary": "Index a GitHub repository",
+        "operationId": "indexRepository",
+        "description": "Shallowly clones and parses a public GitHub repository or branch, extracting AST symbols, functions, classes, and HTTP route handlers into an in-memory index.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "description": "The GitHub repository URL (e.g. https://github.com/owner/repo)."
+                  },
+                  "branch": {
+                    "type": "string",
+                    "description": "Optional branch name."
+                  }
+                },
+                "required": ["url"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Summary of indexed repository including total files, languages, and entry points.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/search-codebase": {
+      "post": {
+        "summary": "Search codebase symbols and routes",
+        "operationId": "searchCodebase",
+        "description": "Performs structural search across indexed symbols (functions, classes, routes) in the active repository.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "query": {
+                    "type": "string",
+                    "description": "Symbol name, function, route, or keyword to search (e.g. 'auth', 'verifyToken', 'login')."
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": ["function", "method", "class", "interface", "type", "variable", "route"],
+                    "description": "Optional symbol kind filter."
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "default": 10
+                  }
+                },
+                "required": ["query"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "List of matching symbols with file locations and signatures.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/get-file": {
+      "post": {
+        "summary": "Retrieve specific file lines with line numbers",
+        "operationId": "getFileSlice",
+        "description": "Retrieves exact source code lines from a file in the indexed repository with line numbers prefixed.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "filePath": {
+                    "type": "string",
+                    "description": "Relative file path within the indexed repository."
+                  },
+                  "startLine": {
+                    "type": "integer",
+                    "description": "Starting line number (1-based)."
+                  },
+                  "endLine": {
+                    "type": "integer",
+                    "description": "Ending line number (1-based)."
+                  }
+                },
+                "required": ["filePath"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Formatted file contents with line numbers.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/trace-symbol": {
+      "post": {
+        "summary": "Trace cross-file call hierarchy and references",
+        "operationId": "traceSymbol",
+        "description": "Traces a symbol across the indexed repository: finds definitions, files importing it, and connected HTTP endpoints.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "symbolName": {
+                    "type": "string",
+                    "description": "Name of the function, class, or symbol to trace."
+                  }
+                },
+                "required": ["symbolName"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Call graph trace and references.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
