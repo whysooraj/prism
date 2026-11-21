@@ -1,0 +1,17 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "Prism",
+  "name_for_model": "prism",
+  "description_for_human": "Inspect website layouts, WCAG contrast, and GitHub codebases.",
+  "description_for_model": "Plugin for inspecting website CSS box models, design tokens, WCAG contrast audits, and indexing GitHub repositories to trace code symbols and routes without reading whole files.",
+  "auth": {
+    "type": "none"
+  },
+  "api": {
+    "type": "openapi",
+    "url": "http://localhost:3000/openapi.json"
+  },
+  "logo_url": "https://raw.githubusercontent.com/whysooraj/prism/main/assets/icon.svg",
+  "contact_email": "moulisai2109@gmail.com",
+  "legal_info_url": "https://github.com/whysooraj/prism"
+}

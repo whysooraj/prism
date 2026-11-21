@@ -10,6 +10,7 @@ import type { SymbolKind } from './types.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OPENAPI_PATH = path.resolve(__dirname, '..', 'openapi.json');
+const PLUGIN_MANIFEST_PATH = path.resolve(__dirname, '..', '.well-known', 'ai-plugin.json');
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 
@@ -79,7 +80,19 @@ export function createHttpServer(): http.Server {
         });
       }
 
-      // 2. Serve OpenAPI schema directly for ChatGPT Actions import
+      // 2. Serve classic ChatGPT Plugin manifest
+      if (req.method === 'GET' && pathname === '/.well-known/ai-plugin.json') {
+        if (fs.existsSync(PLUGIN_MANIFEST_PATH)) {
+          const raw = fs.readFileSync(PLUGIN_MANIFEST_PATH, 'utf-8');
+          const manifest = JSON.parse(raw);
+          const protocol = req.headers['x-forwarded-proto'] || 'http';
+          manifest.api.url = `${protocol}://${req.headers.host}/openapi.json`;
+          return sendJson(res, 200, manifest);
+        }
+        return sendJson(res, 404, { error: 'ai-plugin.json not found' });
+      }
+
+      // 3. Serve OpenAPI schema directly for ChatGPT Actions & Plugins import
       if (req.method === 'GET' && pathname === '/openapi.json') {
         if (fs.existsSync(OPENAPI_PATH)) {
           const raw = fs.readFileSync(OPENAPI_PATH, 'utf-8');
