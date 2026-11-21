@@ -19,17 +19,30 @@ Deterministic web layout inspection and structural repository intelligence engin
 
 ## Quickstart (One-Line Universal Installer)
 
-Install Prism, auto-configure MCP endpoints, and inject the native `SKILL.md` specification across 70+ supported AI agents in one command:
+Install Prism with an interactive agent & scope selector (Global vs Local Project):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/whysooraj/prism/main/install.sh | bash
 ```
 
-The installer:
-1. Clones to `~/.prism` and builds the optimized binary.
-2. Injects the `prism` MCP definition into all active client configs.
-3. Injects the standardized `SKILL.md` into Universal (`~/.agents/skills/`), OpenClaw, Hermes Agent, Antigravity, Claude Code, Cursor, and 14+ other skill registries.
-4. Verifies execution and reports status.
+The installer prompts you:
+1. **Scope Selection**:
+   - **Global** (system-wide: `~/.agents/skills/`, `~/.claude.json`, `~/.gemini/config/`, etc.)
+   - **Local Project** (installs inside the current directory: `./.agents/skills/`, `./.cursor/mcp.json`, etc.)
+   - **Both**
+2. **Agent Selection**:
+   - Auto-detects installed agents on your machine.
+   - Lets you choose: **[A]** All detected agents, **[E]** All 70+ supported agents, or **[C]** Custom selection.
+
+### Non-Interactive / CI Flags
+
+```bash
+# Install globally for all detected agents non-interactively
+curl -fsSL https://raw.githubusercontent.com/whysooraj/prism/main/install.sh | bash -s -- -g -y
+
+# Install locally to current project only
+curl -fsSL https://raw.githubusercontent.com/whysooraj/prism/main/install.sh | bash -s -- -l -y
+```
 
 ---
 
