@@ -7,12 +7,17 @@
 Deterministic web layout inspection and structural repository intelligence engine for AI coding agents via Model Context Protocol (MCP).
 
 <p align="center">
-  <img src="assets/supported-agents.svg" alt="Supported AI Runners" width="100%" />
+  <a href="#supported-ai-agents--clients"><img src="https://img.shields.io/badge/Google_DeepMind-Antigravity-4285F4?style=flat-square&logo=google&logoColor=white" alt="Google DeepMind Antigravity" /></a>
+  <a href="#supported-ai-agents--clients"><img src="https://img.shields.io/badge/Anthropic-Claude_Code-D97706?style=flat-square&logo=anthropic&logoColor=white" alt="Anthropic Claude" /></a>
+  <a href="#supported-ai-agents--clients"><img src="https://img.shields.io/badge/OpenAI-Codex_&_ChatGPT-412991?style=flat-square&logo=openai&logoColor=white" alt="OpenAI Codex" /></a>
+  <a href="#supported-ai-agents--clients"><img src="https://img.shields.io/badge/Anysphere-Cursor-000000?style=flat-square&logo=cursor&logoColor=white" alt="Cursor" /></a>
+  <a href="#supported-ai-agents--clients"><img src="https://img.shields.io/badge/GitHub-Copilot_CLI-181717?style=flat-square&logo=github&logoColor=white" alt="GitHub Copilot" /></a>
+  <a href="#supported-ai-agents--clients"><img src="https://img.shields.io/badge/Microsoft-VS_Code_/_Cline-007ACC?style=flat-square&logo=visualstudiocode&logoColor=white" alt="VS Code Cline" /></a>
 </p>
 
 ## Quickstart (One-Line Installer)
 
-Install Prism and automatically configure all detected AI agents (Claude, Antigravity, Cursor, OpenCode, Pi, Codex, Cline) in one command:
+Install Prism and automatically configure all detected AI agents (Google DeepMind Antigravity, Anthropic Claude, Cursor, OpenAI Codex, OpenCode, Pi, Cline) in one command:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/whysooraj/prism/main/install.sh | bash
@@ -40,16 +45,16 @@ Prism bridges this gap by providing deterministic, structured context:
 
 ## Supported AI Agents & Clients
 
-| Agent / Client | Command / Environment | Auto-Configured Path |
-|---|---|---|
-| **Antigravity (agy)** | `agy -p "..."` / Gemini CLI | `~/.gemini/config/mcp_config.json` |
-| **Claude Code** | `claude` CLI | `~/.claude.json` |
-| **Cursor** | Cursor Composer & Chat | `~/.config/Cursor/User/mcp.json` |
-| **OpenCode** | `opencode run` | `~/.config/opencode/mcp.json` |
-| **Pi Agent** | `pi --tools` | `~/.pi/mcp.json` |
-| **Codex CLI** | `codex exec` | `~/.codex/mcp.json` |
-| **Cline / VS Code** | Roo Code / Cline extensions | `~/.config/Code/User/mcp.json` |
-| **Claude Desktop** | Desktop application | `claude_desktop_config.json` |
+| Company / Organization | Agent / Client | Command / Runner | Auto-Configured Path |
+|---|---|---|---|
+| **Google DeepMind** | Antigravity (`agy`) / Gemini CLI | `agy -p "..."` | `~/.gemini/config/mcp_config.json` |
+| **Anthropic** | Claude Code & Claude Desktop | `claude` | `~/.claude.json` |
+| **Anysphere** | Cursor | Cursor Composer & Chat | `~/.config/Cursor/User/mcp.json` |
+| **OpenAI** | Codex CLI | `codex exec` | `~/.codex/mcp.json` |
+| **OpenCode Project** | OpenCode | `opencode run` | `~/.config/opencode/mcp.json` |
+| **Inflection AI** | Pi Agent | `pi --tools` | `~/.pi/mcp.json` |
+| **Cline Community** | Cline / Roo Code | VS Code Extension | `~/.config/Code/User/mcp.json` |
+| **GitHub / Microsoft** | GitHub Copilot CLI | `copilot -p "..."` | Configurable MCP |
 
 ---
 
