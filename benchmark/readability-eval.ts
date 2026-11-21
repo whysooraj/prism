@@ -13,6 +13,8 @@ export interface BenchmarkCase {
     touchTargetViolations?: number;
     occlusionFailures?: number;
     horizontalOverflow?: boolean;
+    asymmetricPaddingFailures?: number;
+    textOverflowFailures?: number;
     aiTropes?: number;
   };
 }
@@ -78,6 +80,99 @@ export const BENCHMARK_CASES: BenchmarkCase[] = [
       </body></html>
     `,
     expectedIssues: { occlusionFailures: 1 }
+  },
+
+  // 4. Gradient Contrast Defect (Text unreadable on bright stop)
+  {
+    id: 'gradient-contrast',
+    name: 'Gradient Backdrop Contrast Defect',
+    html: `
+      <!DOCTYPE html><html><head><style>
+        body { margin: 0; background: #000; font-family: sans-serif; }
+        .grad-card {
+          background-image: linear-gradient(to right, rgb(15, 23, 42), rgb(248, 250, 252));
+          padding: 32px;
+          width: 600px;
+          margin: 20px;
+        }
+        .grad-text { color: #ffffff; font-size: 16px; }
+      </style></head><body>
+        <div class="grad-card">
+          <p class="grad-text">White text on gradient fading to near white</p>
+        </div>
+      </body></html>
+    `,
+    expectedIssues: { contrastFailures: 1 }
+  },
+
+  // 5. Optical Asymmetry & Overflow Defect
+  {
+    id: 'asymmetric-overflow',
+    name: 'Asymmetric Padding & Text Clipping Defect',
+    html: `
+      <!DOCTYPE html><html><head><style>
+        body { margin: 0; background: #fafafa; font-family: sans-serif; }
+        .unbalanced-btn {
+          padding: 12px 32px 12px 4px; /* Unbalanced 32px vs 4px */
+          background: #0284c7;
+          color: #fff;
+          font-size: 16px;
+          min-height: 48px;
+          min-width: 140px;
+          border: none;
+        }
+        .clipped-box {
+          width: 80px;
+          height: 24px;
+          overflow: hidden;
+          white-space: nowrap;
+          background: #e2e8f0;
+          color: #0f172a;
+          padding: 4px;
+        }
+      </style></head><body>
+        <button class="unbalanced-btn">Imbalanced Button</button>
+        <div class="clipped-box">Long Text That Definitely Clips Without Ellipsis</div>
+      </body></html>
+    `,
+    expectedIssues: { asymmetricPaddingFailures: 1, textOverflowFailures: 1 }
+  },
+
+  // 6. High-Density Enterprise Metrics Dashboard
+  {
+    id: 'dense-dashboard',
+    name: 'High-Density Clean Enterprise Dashboard',
+    html: `
+      <!DOCTYPE html><html><head><style>
+        body { margin: 0; background: #09090b; color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; }
+        .container { padding: 32px; max-width: 1200px; margin: 0 auto; }
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+        .card { background: #18181b; border: 1px solid #27272a; border-radius: 8px; padding: 16px; }
+        .card-label { font-size: 12px; color: #a1a1aa; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+        .card-value { font-size: 28px; font-weight: 700; color: #fafafa; }
+        table { width: 100%; border-collapse: collapse; background: #18181b; border-radius: 8px; overflow: hidden; border: 1px solid #27272a; }
+        th { text-align: left; padding: 12px 16px; background: #27272a; color: #d4d4d8; font-size: 12px; font-weight: 600; }
+        td { padding: 12px 16px; border-bottom: 1px solid #27272a; color: #fafafa; }
+        .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+        button { background: #2563eb; color: #ffffff; border: none; border-radius: 6px; padding: 12px 20px; font-size: 14px; font-weight: 500; cursor: pointer; min-height: 44px; min-width: 100px; }
+      </style></head><body>
+        <div class="container">
+          <div class="grid">
+            <div class="card"><div class="card-label">Total Requests</div><div class="card-value">1,248,392</div></div>
+            <div class="card"><div class="card-label">Avg Latency</div><div class="card-value">12.4ms</div></div>
+            <div class="card"><div class="card-label">Uptime</div><div class="card-value">99.98%</div></div>
+          </div>
+          <table>
+            <thead><tr><th>Service</th><th>Status</th><th>P99</th><th>Action</th></tr></thead>
+            <tbody>
+              <tr><td>Auth Gateway</td><td><span class="badge">Operational</span></td><td>8.2ms</td><td><button>View</button></td></tr>
+              <tr><td>Layout Engine</td><td><span class="badge">Operational</span></td><td>14.1ms</td><td><button>View</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </body></html>
+    `,
+    expectedIssues: { contrastFailures: 0, spacingDeviations: 0, touchTargetViolations: 0, horizontalOverflow: false, aiTropes: 0 }
   }
 ];
 
@@ -121,6 +216,18 @@ export async function runBenchmark(): Promise<{
     const actualOcclusionFails = inspection.critique.occlusionIssues.length;
     if (tc.expectedIssues.occlusionFailures !== undefined && actualOcclusionFails < tc.expectedIssues.occlusionFailures) {
       discrepancies.push(`Missed ${tc.expectedIssues.occlusionFailures - actualOcclusionFails} layer occlusion defects`);
+    }
+
+    // Verify asymmetric padding detection
+    const actualAsymFails = inspection.critique.asymmetricPaddingIssues ? inspection.critique.asymmetricPaddingIssues.length : 0;
+    if (tc.expectedIssues.asymmetricPaddingFailures !== undefined && actualAsymFails < tc.expectedIssues.asymmetricPaddingFailures) {
+      discrepancies.push(`Missed ${tc.expectedIssues.asymmetricPaddingFailures - actualAsymFails} asymmetric padding defects`);
+    }
+
+    // Verify text overflow & clipping detection
+    const actualOverflowFails = inspection.critique.textOverflowIssues ? inspection.critique.textOverflowIssues.length : 0;
+    if (tc.expectedIssues.textOverflowFailures !== undefined && actualOverflowFails < tc.expectedIssues.textOverflowFailures) {
+      discrepancies.push(`Missed ${tc.expectedIssues.textOverflowFailures - actualOverflowFails} text overflow defects`);
     }
 
     // Calculate AI Readability / Comprehension Fidelity (100 - penalties for missed defects)

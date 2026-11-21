@@ -62,18 +62,75 @@ export async function inspectWebsite(options: InspectOptions): Promise<WebInspec
       const spacingCandidateList: { element: string; selector: string; property: string; value: string; num: number }[] = [];
       const touchTargetCandidateList: { element: string; selector: string; width: number; height: number }[] = [];
       const occlusionCandidateList: { targetElement: string; targetSelector: string; occludedBy: string; occludedBySelector: string; point: { x: number; y: number } }[] = [];
+      const asymmetricPaddingCandidateList: { element: string; selector: string; left: number; right: number; top: number; bottom: number; reason: string }[] = [];
+      const textOverflowCandidateList: { element: string; selector: string; text: string; scrollWidth: number; clientWidth: number }[] = [];
       const aiTropes: string[] = [];
 
+      function parseRgba(str: string): [number, number, number, number] | null {
+        const m = str.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+        if (!m) return null;
+        return [parseInt(m[1], 10), parseInt(m[2], 10), parseInt(m[3], 10), m[4] !== undefined ? parseFloat(m[4]) : 1.0];
+      }
+
+      function compositeColors(top: [number, number, number, number], bot: [number, number, number, number]): [number, number, number, number] {
+        const a1 = top[3];
+        const a2 = bot[3];
+        const outA = a1 + a2 * (1 - a1);
+        if (outA <= 0) return [255, 255, 255, 1];
+        const outR = Math.round((top[0] * a1 + bot[0] * a2 * (1 - a1)) / outA);
+        const outG = Math.round((top[1] * a1 + bot[1] * a2 * (1 - a1)) / outA);
+        const outB = Math.round((top[2] * a1 + bot[2] * a2 * (1 - a1)) / outA);
+        return [outR, outG, outB, Math.min(1, outA)];
+      }
+
       function getEffectiveBg(curr: Element | null): string {
-        while (curr && curr !== document.documentElement) {
-          const pStyle = window.getComputedStyle(curr);
+        const layers: [number, number, number, number][] = [];
+        let el = curr;
+        while (el && el !== document.documentElement) {
+          const pStyle = window.getComputedStyle(el);
           const pBg = pStyle.backgroundColor;
           if (pBg && pBg !== 'rgba(0, 0, 0, 0)' && pBg !== 'transparent') {
-            return pBg;
+            const parsed = parseRgba(pBg);
+            if (parsed) {
+              layers.push(parsed);
+              if (parsed[3] >= 0.99) break;
+            }
           }
-          curr = curr.parentElement;
+          el = el.parentElement;
         }
-        return 'rgb(255, 255, 255)';
+
+        const rootStyle = window.getComputedStyle(document.documentElement);
+        const rootBg = rootStyle.backgroundColor;
+        let baseColor: [number, number, number, number] = [255, 255, 255, 1];
+        if (rootBg && rootBg !== 'rgba(0, 0, 0, 0)' && rootBg !== 'transparent') {
+          const parsedRoot = parseRgba(rootBg);
+          if (parsedRoot) baseColor = parsedRoot;
+        }
+
+        let currentComp = baseColor;
+        for (let i = layers.length - 1; i >= 0; i--) {
+          currentComp = compositeColors(layers[i], currentComp);
+        }
+        return `rgb(${currentComp[0]}, ${currentComp[1]}, ${currentComp[2]})`;
+      }
+
+      function getGradientStops(curr: Element | null): string[] {
+        let el = curr;
+        while (el && el !== document.documentElement) {
+          const pStyle = window.getComputedStyle(el);
+          const bgImg = pStyle.backgroundImage;
+          if (bgImg && bgImg.includes('gradient')) {
+            const colorRegex = /(?:rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+(?:\s*,\s*[\d.]+\s*)?\)|#[0-9a-fA-F]{3,8})/g;
+            const matches: string[] = [];
+            let m;
+            while ((m = colorRegex.exec(bgImg)) !== null) {
+              matches.push(m[0]);
+            }
+            if (matches.length > 0) return matches;
+          }
+          el = el.parentElement;
+        }
+        return [];
       }
 
       // Check horizontal overflow
@@ -209,6 +266,19 @@ export async function inspectWebsite(options: InspectOptions): Promise<WebInspec
             });
           }
 
+          // Check asymmetric horizontal padding (optical balance defect)
+          if (rect.width > 30 && Math.abs(padLeft - padRight) >= 4) {
+            asymmetricPaddingCandidateList.push({
+              element: tag,
+              selector,
+              left: padLeft,
+              right: padRight,
+              top: padTop,
+              bottom: padBottom,
+              reason: `Asymmetric padding (${padLeft}px left vs ${padRight}px right) disrupts optical button balance`
+            });
+          }
+
           // Check visual occlusion / overlapping layers blocking click
           const cx = Math.round(rect.x + rect.width / 2);
           const cy = Math.round(rect.y + rect.height / 2);
@@ -235,16 +305,50 @@ export async function inspectWebsite(options: InspectOptions): Promise<WebInspec
           .map((n) => n.textContent?.trim())
           .join(' ');
 
-        const effectiveBg = (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') ? bg : getEffectiveBg(el.parentElement);
-        if (directText.length > 0 && color && effectiveBg) {
-          contrastCandidateList.push({
-            element: tag,
-            selector,
-            fg: color,
-            bg: effectiveBg,
-            text: directText.slice(0, 30),
-            fontSize: parseFloat(style.fontSize) || 16
-          });
+        // Check text overflow and unintentional clipping
+        if (directText.length > 0 && rect.width > 0 && rect.height > 0) {
+          const scrollW = (el as HTMLElement).scrollWidth;
+          const clientW = (el as HTMLElement).clientWidth;
+          const overflowX = style.overflowX;
+          if (scrollW > clientW + 2 && (overflowX === 'hidden' || overflowX === 'clip')) {
+            textOverflowCandidateList.push({
+              element: tag,
+              selector,
+              text: directText.slice(0, 40),
+              scrollWidth: scrollW,
+              clientWidth: clientW
+            });
+          }
+        }
+
+        const effectiveBg = (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent' && (!bg.includes('rgba') || parseRgba(bg)?.[3] === 1))
+          ? bg
+          : getEffectiveBg(el);
+
+        if (directText.length > 0 && color) {
+          if (effectiveBg) {
+            contrastCandidateList.push({
+              element: tag,
+              selector,
+              fg: color,
+              bg: effectiveBg,
+              text: directText.slice(0, 30),
+              fontSize: parseFloat(style.fontSize) || 16
+            });
+          }
+
+          // Check gradient backdrop stops if any
+          const gradStops = getGradientStops(el);
+          for (const stop of gradStops) {
+            contrastCandidateList.push({
+              element: tag,
+              selector,
+              fg: color,
+              bg: stop,
+              text: `${directText.slice(0, 20)} (gradient stop)`,
+              fontSize: parseFloat(style.fontSize) || 16
+            });
+          }
         }
 
         // Recursively extract children
@@ -308,6 +412,8 @@ export async function inspectWebsite(options: InspectOptions): Promise<WebInspec
         spacingCandidateList,
         touchTargetCandidateList,
         occlusionCandidateList,
+        asymmetricPaddingCandidateList,
+        textOverflowCandidateList,
         horizontalOverflow,
         aiTropes,
         layoutRoot
@@ -382,6 +488,8 @@ export async function inspectWebsite(options: InspectOptions): Promise<WebInspec
       spacingChecks: spacingIssues,
       touchTargets: touchTargetIssues,
       occlusionChecks: inspectionData.occlusionCandidateList,
+      asymmetricPaddingChecks: inspectionData.asymmetricPaddingCandidateList,
+      textOverflowChecks: inspectionData.textOverflowCandidateList,
       horizontalOverflow: inspectionData.horizontalOverflow,
       aiTropes: inspectionData.aiTropes
     });

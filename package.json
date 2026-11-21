@@ -14,7 +14,7 @@
     "context-bridge": "./dist/index.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && (mkdir -p dist/web && cp src/web/ui.html dist/web/ui.html || true)",
     "start": "tsx src/index.ts",
     "serve": "tsx src/http.ts",
     "start:http": "node dist/http.js",

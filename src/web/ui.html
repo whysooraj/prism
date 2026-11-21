@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prism UI Inspector</title>
+  <style>
+    :root {
+      --bg: #09090b;
+      --surface: #121215;
+      --surface-border: #27272a;
+      --surface-hover: #1c1c20;
+      --text-main: #f4f4f5;
+      --text-muted: #a1a1aa;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --success: #10b981;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text-main);
+      font-family: var(--sans);
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      height: 56px;
+      border-bottom: 1px solid var(--surface-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      background: var(--surface);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: -0.02em;
+    }
+    .badge {
+      font-size: 11px;
+      font-family: var(--mono);
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #27272a;
+      color: #d4d4d8;
+    }
+    .header-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 13px;
+      margin-left: 16px;
+    }
+    .header-links a:hover { color: var(--text-main); }
+
+    .control-bar {
+      padding: 16px 24px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--surface-border);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+    .input-group {
+      flex: 1;
+      min-width: 320px;
+      display: flex;
+      gap: 8px;
+    }
+    input[type="text"] {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--surface-border);
+      border-radius: 6px;
+      color: var(--text-main);
+      padding: 8px 12px;
+      font-size: 13px;
+      font-family: var(--mono);
+      outline: none;
+    }
+    input[type="text"]:focus {
+      border-color: var(--accent);
+    }
+    select, button {
+      background: var(--surface-hover);
+      border: 1px solid var(--surface-border);
+      color: var(--text-main);
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    select:hover, button:hover {
+      background: #2e2e34;
+    }
+    button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    button.primary:hover {
+      background: var(--accent-hover);
+    }
+    .preset-btns {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .preset-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-right: 4px;
+    }
+    .preset-btn {
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 480px;
+      gap: 0;
+      overflow: hidden;
+    }
+
+    .viewer-panel {
+      border-right: 1px solid var(--surface-border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .panel-header {
+      padding: 10px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--surface-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .tabs {
+      display: flex;
+      gap: 8px;
+    }
+    .tab {
+      padding: 4px 10px;
+      border-radius: 4px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .tab.active {
+      background: var(--surface-hover);
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    .panel-content {
+      flex: 1;
+      overflow: auto;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+    }
+    .wireframe-container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .wireframe-container svg {
+      max-width: 100%;
+      max-height: 100%;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      border-radius: 4px;
+    }
+    .radar-container {
+      width: 100%;
+      height: 100%;
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.15;
+      white-space: pre;
+      color: #38bdf8;
+      background: #09090b;
+      padding: 16px;
+      border-radius: 6px;
+      border: 1px solid var(--surface-border);
+      overflow: auto;
+      display: none;
+    }
+
+    .audit-panel {
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      background: var(--surface);
+    }
+    .score-banner {
+      padding: 20px;
+      border-bottom: 1px solid var(--surface-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .score-circle {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+    .score-val {
+      font-size: 36px;
+      font-weight: 700;
+      font-family: var(--mono);
+    }
+    .score-max {
+      font-size: 16px;
+      color: var(--text-muted);
+    }
+    .score-grade {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .grade-pass { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+    .grade-warn { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+    .grade-fail { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+
+    .summary-list {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--surface-border);
+    }
+    .summary-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .summary-item {
+      font-size: 13px;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .summary-item:last-child { margin-bottom: 0; }
+
+    .defects-section {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--surface-border);
+    }
+    .defect-group {
+      margin-bottom: 16px;
+    }
+    .defect-header {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .defect-card {
+      background: var(--bg);
+      border: 1px solid var(--surface-border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      margin-bottom: 6px;
+      font-size: 12px;
+      font-family: var(--mono);
+    }
+
+    .tokens-section {
+      padding: 16px 20px;
+    }
+    .palette-swatches {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .swatch {
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      border: 1px solid var(--surface-border);
+      cursor: pointer;
+      position: relative;
+    }
+    .swatch:hover::after {
+      content: attr(data-color);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #000;
+      color: #fff;
+      font-size: 10px;
+      font-family: var(--mono);
+      padding: 2px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+      pointer-events: none;
+      margin-bottom: 4px;
+      z-index: 10;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 48px 24px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span>PRISM</span>
+      <span class="badge">v0.1.0</span>
+      <span class="badge">LAYOUT ENGINE</span>
+    </div>
+    <div class="header-links">
+      <a href="/openapi.json" target="_blank">OpenAPI 3.1</a>
+      <a href="/health" target="_blank">Health Status</a>
+      <a href="https://github.com/whysooraj/prism" target="_blank">GitHub</a>
+    </div>
+  </header>
+
+  <div class="control-bar">
+    <div class="input-group">
+      <input type="text" id="targetUrl" placeholder="Enter URL or data:text/html,... (e.g. https://news.ycombinator.com)" />
+      <select id="viewportSelect">
+        <option value="1440x900">Desktop (1440x900)</option>
+        <option value="390x844">Mobile (390x844)</option>
+        <option value="768x1024">Tablet (768x1024)</option>
+      </select>
+      <button class="primary" id="inspectBtn">Inspect</button>
+    </div>
+    <div class="preset-btns">
+      <span class="preset-label">Presets:</span>
+      <button class="preset-btn" onclick="loadPreset('saas')">8pt SaaS</button>
+      <button class="preset-btn" onclick="loadPreset('broken')">Defective UI</button>
+      <button class="preset-btn" onclick="loadPreset('occlusion')">Layer Occlusion</button>
+      <button class="preset-btn" onclick="loadPreset('dashboard')">Enterprise Dash</button>
+    </div>
+  </div>
+
+  <main>
+    <section class="viewer-panel">
+      <div class="panel-header">
+        <div class="tabs">
+          <button class="tab active" id="tabWireframe" onclick="switchTab('wireframe')">SVG Wireframe</button>
+          <button class="tab" id="tabRadar" onclick="switchTab('radar')">2D Monospace Radar</button>
+        </div>
+        <span class="badge" id="viewportBadge">1440x900</span>
+      </div>
+      <div class="panel-content">
+        <div class="wireframe-container" id="wireframeBox">
+          <div class="empty-state">Enter a URL or select a preset to begin layout inspection</div>
+        </div>
+        <div class="radar-container" id="radarBox"></div>
+      </div>
+    </section>
+
+    <section class="audit-panel" id="auditPanel">
+      <div class="score-banner">
+        <div>
+          <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">AI UI Score</div>
+          <div class="score-circle">
+            <span class="score-val" id="scoreVal">--</span>
+            <span class="score-max">/100</span>
+          </div>
+        </div>
+        <span class="score-grade" id="scoreGrade">Awaiting Run</span>
+      </div>
+
+      <div class="summary-list">
+        <div class="summary-title">Inspection Findings</div>
+        <div id="summaryItems">
+          <div class="empty-state">No inspection executed yet</div>
+        </div>
+      </div>
+
+      <div class="defects-section" id="defectsSection" style="display: none;">
+        <div class="summary-title">Defect Categorization</div>
+        <div id="defectsContent"></div>
+      </div>
+
+      <div class="tokens-section" id="tokensSection" style="display: none;">
+        <div class="summary-title">Extracted Palette & Tokens</div>
+        <div class="palette-swatches" id="paletteSwatches"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const PRESETS = {
+      saas: `data:text/html;base64,${btoa('<!DOCTYPE html><html><head><style>body{margin:0;background:#09090b;color:#fafafa;font-family:sans-serif}.nav{height:64px;padding:16px 32px;display:flex;justify-content:space-between;align-items:center}.hero{padding:64px 32px;display:flex;flex-direction:column;gap:24px;align-items:center;text-align:center}h1{font-size:48px;line-height:56px;margin:0}p{font-size:16px;color:#a1a1aa;max-width:600px;margin:0}.btn{background:#3b82f6;color:#fff;padding:12px 24px;border-radius:6px;border:none;min-height:44px;min-width:120px}</style></head><body><div class="nav"><span>Brand</span><button class="btn">Login</button></div><div class="hero"><h1>Autonomous Infrastructure</h1><p>Deterministic layout extraction for agents.</p><button class="btn">Deploy</button></div></body></html>')}`,
+      broken: `data:text/html;base64,${btoa('<!DOCTYPE html><html><head><style>body{margin:0;background:#0f172a;color:#1e293b;font-family:sans-serif}.wide-box{width:1600px;height:40px;background:#334155}.off-grid{padding:13px 21px;margin:7px;background:#1e293b;color:#334155}.tiny-btn{width:22px;height:18px;background:#6366f1;color:#fff;border:none}</style></head><body><div class="wide-box">Overflow Box</div><div class="off-grid"><p>Bad contrast text</p><button class="tiny-btn">x</button></div></body></html>')}`,
+      occlusion: `data:text/html;base64,${btoa('<!DOCTYPE html><html><head><style>body{margin:0;background:#fff;font-family:sans-serif}.btn{position:absolute;top:20px;left:20px;width:120px;height:48px;background:#3b82f6;color:#fff;z-index:1}.overlay{position:absolute;top:0;left:0;width:200px;height:100px;background:rgba(0,0,0,0.8);z-index:99;color:#fff;padding:16px}</style></head><body><button class="btn">Hidden CTA</button><div class="overlay">Blocking Overlay</div></body></html>')}`,
+      dashboard: `data:text/html;base64,${btoa('<!DOCTYPE html><html><head><style>body{margin:0;background:#09090b;color:#f4f4f5;font-family:sans-serif;font-size:14px}.container{padding:32px;max-width:1200px;margin:0 auto}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}.card{background:#18181b;border:1px solid:#27272a;border-radius:8px;padding:16px}.val{font-size:28px;font-weight:700;color:#fafafa}table{width:100%;border-collapse:collapse;background:#18181b;border:1px solid #27272a}th,td{padding:12px 16px;text-align:left;border-bottom:1px solid #27272a}button{background:#2563eb;color:#fff;border:none;border-radius:6px;padding:12px 20px;min-height:44px}</style></head><body><div class="container"><div class="grid"><div class="card"><div>Requests</div><div class="val">1.2M</div></div><div class="card"><div>Latency</div><div class="val">12ms</div></div><div class="card"><div>Uptime</div><div class="val">99.9%</div></div></div><table><thead><tr><th>Endpoint</th><th>Status</th><th>Action</th></tr></thead><tbody><tr><td>/api/inspect</td><td>Healthy</td><td><button>Run</button></td></tr></tbody></table></div></body></html>')}`
+    };
+
+    function loadPreset(key) {
+      document.getElementById('targetUrl').value = PRESETS[key];
+      runInspection();
+    }
+
+    function switchTab(mode) {
+      const wireframeBox = document.getElementById('wireframeBox');
+      const radarBox = document.getElementById('radarBox');
+      const tabW = document.getElementById('tabWireframe');
+      const tabR = document.getElementById('tabRadar');
+
+      if (mode === 'wireframe') {
+        wireframeBox.style.display = 'flex';
+        radarBox.style.display = 'none';
+        tabW.classList.add('active');
+        tabR.classList.remove('active');
+      } else {
+        wireframeBox.style.display = 'none';
+        radarBox.style.display = 'block';
+        tabW.classList.remove('active');
+        tabR.classList.add('active');
+      }
+    }
+
+    async function runInspection() {
+      const url = document.getElementById('targetUrl').value.trim();
+      if (!url) return alert('Please enter a URL or select a preset');
+
+      const vpVal = document.getElementById('viewportSelect').value;
+      const [w, h] = vpVal.split('x').map(Number);
+      document.getElementById('viewportBadge').textContent = `${w}x${h}`;
+
+      const btn = document.getElementById('inspectBtn');
+      btn.textContent = 'Inspecting...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/inspect-website', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            url,
+            viewport: { width: w, height: h },
+            allowLocalhost: true,
+            includeWireframeSvg: true
+          })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Inspection failed');
+        }
+
+        const data = await res.json();
+        renderInspection(data);
+      } catch (err) {
+        alert('Error: ' + err.message);
+      } finally {
+        btn.textContent = 'Inspect';
+        btn.disabled = false;
+      }
+    }
+
+    function renderInspection(data) {
+      // 1. Wireframe SVG
+      const wireframeBox = document.getElementById('wireframeBox');
+      if (data.wireframeSvg) {
+        wireframeBox.innerHTML = data.wireframeSvg;
+      } else {
+        wireframeBox.innerHTML = '<div class="empty-state">No SVG wireframe returned</div>';
+      }
+
+      // 2. 2D Radar
+      const radarBox = document.getElementById('radarBox');
+      radarBox.textContent = data.asciiRadar || 'No ASCII radar available';
+
+      // 3. Score
+      const critique = data.designCritique;
+      const scoreVal = document.getElementById('scoreVal');
+      const scoreGrade = document.getElementById('scoreGrade');
+      scoreVal.textContent = critique.score;
+
+      scoreGrade.className = 'score-grade';
+      if (critique.score >= 80) {
+        scoreGrade.textContent = 'Passing';
+        scoreGrade.classList.add('grade-pass');
+      } else if (critique.score >= 50) {
+        scoreGrade.textContent = 'Warning';
+        scoreGrade.classList.add('grade-warn');
+      } else {
+        scoreGrade.textContent = 'Critical Defects';
+        scoreGrade.classList.add('grade-fail');
+      }
+
+      // 4. Summary findings
+      const summaryItems = document.getElementById('summaryItems');
+      summaryItems.innerHTML = critique.summary.map(s => `
+        <div class="summary-item">
+          <span style="color: ${s.includes('(-') ? 'var(--danger)' : 'var(--success)'}">•</span>
+          <span>${s}</span>
+        </div>
+      `).join('');
+
+      // 5. Defects breakdown
+      const defectsSection = document.getElementById('defectsSection');
+      const defectsContent = document.getElementById('defectsContent');
+      defectsSection.style.display = 'block';
+
+      let defectHtml = '';
+      if (critique.contrastIssues && critique.contrastIssues.length > 0) {
+        defectHtml += `<div class="defect-group"><div class="defect-header"><span>WCAG Contrast Failures</span><span>${critique.contrastIssues.length}</span></div>`;
+        defectHtml += critique.contrastIssues.map(c => `
+          <div class="defect-card">
+            <div><strong>${c.selector}</strong> (${c.contrastRatio}:1 vs required ${c.requiredRatio}:1)</div>
+            <div style="color: var(--text-muted); font-size: 11px;">fg: ${c.fg} | bg: ${c.bg}</div>
+          </div>
+        `).join('');
+        defectHtml += `</div>`;
+      }
+
+      if (critique.occlusionIssues && critique.occlusionIssues.length > 0) {
+        defectHtml += `<div class="defect-group"><div class="defect-header"><span>Layer Occlusions</span><span>${critique.occlusionIssues.length}</span></div>`;
+        defectHtml += critique.occlusionIssues.map(o => `
+          <div class="defect-card">
+            <div>Target <strong>${o.targetSelector}</strong></div>
+            <div style="color: var(--danger); font-size: 11px;">Blocked by ${o.occludedBySelector} at (${o.point.x}, ${o.point.y})</div>
+          </div>
+        `).join('');
+        defectHtml += `</div>`;
+      }
+
+      if (critique.asymmetricPaddingIssues && critique.asymmetricPaddingIssues.length > 0) {
+        defectHtml += `<div class="defect-group"><div class="defect-header"><span>Optical Balance Defects</span><span>${critique.asymmetricPaddingIssues.length}</span></div>`;
+        defectHtml += critique.asymmetricPaddingIssues.map(a => `
+          <div class="defect-card">
+            <div><strong>${a.selector}</strong>: ${a.reason}</div>
+          </div>
+        `).join('');
+        defectHtml += `</div>`;
+      }
+
+      if (critique.textOverflowIssues && critique.textOverflowIssues.length > 0) {
+        defectHtml += `<div class="defect-group"><div class="defect-header"><span>Text Overflow / Clipping</span><span>${critique.textOverflowIssues.length}</span></div>`;
+        defectHtml += critique.textOverflowIssues.map(t => `
+          <div class="defect-card">
+            <div><strong>${t.selector}</strong> (scrollWidth ${t.scrollWidth}px > clientWidth ${t.clientWidth}px)</div>
+            <div style="color: var(--text-muted); font-size: 11px;">"${t.text}"</div>
+          </div>
+        `).join('');
+        defectHtml += `</div>`;
+      }
+
+      if (!defectHtml) {
+        defectHtml = '<div style="font-size: 12px; color: var(--success);">No major layout defects detected.</div>';
+      }
+      defectsContent.innerHTML = defectHtml;
+
+      // 6. Tokens
+      const tokensSection = document.getElementById('tokensSection');
+      const paletteSwatches = document.getElementById('paletteSwatches');
+      tokensSection.style.display = 'block';
+
+      if (data.palette && data.palette.backgrounds) {
+        paletteSwatches.innerHTML = data.palette.backgrounds.map(b => `
+          <div class="swatch" style="background-color: ${b.color};" data-color="${b.color} (${b.count}x)"></div>
+        `).join('');
+      }
+    }
+
+    document.getElementById('inspectBtn').addEventListener('click', runInspection);
+    document.getElementById('targetUrl').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') runInspection();
+    });
+
+    // Default load clean SaaS
+    loadPreset('saas');
+  </script>
+</body>
+</html>

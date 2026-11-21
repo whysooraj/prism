@@ -95,6 +95,24 @@ export interface OcclusionIssue {
   point: { x: number; y: number };
 }
 
+export interface TextOverflowIssue {
+  element: string;
+  selector: string;
+  text: string;
+  scrollWidth: number;
+  clientWidth: number;
+}
+
+export interface AsymmetricPaddingIssue {
+  element: string;
+  selector: string;
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+  reason: string;
+}
+
 export interface DesignCritique {
   score: number; // 0 - 100
   horizontalOverflow: boolean;
@@ -105,6 +123,8 @@ export interface DesignCritique {
   spacingIssues: SpacingIssue[];
   touchTargetIssues: TouchTargetIssue[];
   occlusionIssues: OcclusionIssue[];
+  asymmetricPaddingIssues?: AsymmetricPaddingIssue[];
+  textOverflowIssues?: TextOverflowIssue[];
   summary: string[];
 }
 

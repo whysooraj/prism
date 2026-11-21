@@ -26,6 +26,12 @@ test('HTTP Server & OpenAPI for ChatGPT Actions', async () => {
     assert.ok(spec.paths['/api/index-repo']);
     assert.ok(spec.paths['/api/search-codebase']);
 
+    // 2.5. Web Inspector UI Playground
+    const uiRes = await fetch(`${baseUrl}/ui`);
+    assert.equal(uiRes.status, 200);
+    const uiHtml = await uiRes.text();
+    assert.ok(uiHtml.includes('Prism UI Inspector'));
+
     // 3. Inspect mock website via HTTP
     const html = '<title>Action Test</title><div style="padding:16px;">Hello ChatGPT Action</div>';
     const dataUrl = `data:text/html;base64,${Buffer.from(html).toString('base64')}`;

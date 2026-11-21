@@ -1,9 +1,11 @@
 import type {
+  AsymmetricPaddingIssue,
   ContrastIssue,
   DesignCritique,
   DesignPalette,
   OcclusionIssue,
   SpacingIssue,
+  TextOverflowIssue,
   TouchTargetIssue,
   TypographyScale
 } from '../types.js';
@@ -67,6 +69,8 @@ export function auditDesign(params: {
   spacingChecks: SpacingIssue[];
   touchTargets: TouchTargetIssue[];
   occlusionChecks: OcclusionIssue[];
+  asymmetricPaddingChecks?: AsymmetricPaddingIssue[];
+  textOverflowChecks?: TextOverflowIssue[];
   horizontalOverflow: boolean;
   aiTropes: string[];
 }): DesignCritique {
@@ -76,6 +80,8 @@ export function auditDesign(params: {
     spacingChecks,
     touchTargets,
     occlusionChecks,
+    asymmetricPaddingChecks = [],
+    textOverflowChecks = [],
     horizontalOverflow,
     aiTropes
   } = params;
@@ -97,11 +103,25 @@ export function auditDesign(params: {
     summary.push('Critical horizontal layout overflow detected: scrollWidth > clientWidth (-20 pts)');
   }
 
+  // 2.5 Text overflow & clipping defects
+  if (textOverflowChecks.length > 0) {
+    const penalty = Math.min(15, textOverflowChecks.length * 5);
+    score -= penalty;
+    summary.push(`Found ${textOverflowChecks.length} text elements clipped or overflowing their container bounds (-${penalty} pts)`);
+  }
+
   // 3. Spacing grid consistency
   if (spacingChecks.length > 0) {
     const penalty = Math.min(15, spacingChecks.length * 3);
     score -= penalty;
     summary.push(`Found ${spacingChecks.length} non-standard spacing values deviating from 4/8pt grid (-${penalty} pts)`);
+  }
+
+  // 3.5 Asymmetric button / container padding
+  if (asymmetricPaddingChecks.length > 0) {
+    const penalty = Math.min(10, asymmetricPaddingChecks.length * 2);
+    score -= penalty;
+    summary.push(`Found ${asymmetricPaddingChecks.length} interactive elements with asymmetric padding causing optical imbalance (-${penalty} pts)`);
   }
 
   // 4. Touch targets
@@ -146,6 +166,8 @@ export function auditDesign(params: {
     spacingIssues: spacingChecks.slice(0, 10),
     touchTargetIssues: touchTargets.slice(0, 10),
     occlusionIssues: occlusionChecks.slice(0, 10),
+    asymmetricPaddingIssues: asymmetricPaddingChecks.slice(0, 10),
+    textOverflowIssues: textOverflowChecks.slice(0, 10),
     summary
   };
 }

@@ -11,6 +11,20 @@ import type { SymbolKind } from './types.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OPENAPI_PATH = path.resolve(__dirname, '..', 'openapi.json');
 const PLUGIN_MANIFEST_PATH = path.resolve(__dirname, '..', '.well-known', 'ai-plugin.json');
+const UI_PATHS = [
+  path.resolve(__dirname, 'web', 'ui.html'),
+  path.resolve(__dirname, '..', 'src', 'web', 'ui.html'),
+  path.resolve(__dirname, '..', 'dist', 'web', 'ui.html')
+];
+
+function getUiHtml(): string | null {
+  for (const p of UI_PATHS) {
+    if (fs.existsSync(p)) {
+      return fs.readFileSync(p, 'utf-8');
+    }
+  }
+  return null;
+}
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 
@@ -63,14 +77,36 @@ export function createHttpServer(): http.Server {
     const pathname = parsedUrl.pathname;
 
     try {
+      // 0. Serve Interactive Web Inspector Playground UI
+      if (req.method === 'GET' && (pathname === '/ui' || pathname === '/playground')) {
+        const html = getUiHtml();
+        if (html) {
+          res.writeHead(200, {
+            'Content-Type': 'text/html; charset=utf-8',
+            'Access-Control-Allow-Origin': '*'
+          });
+          return res.end(html);
+        }
+        return sendJson(res, 404, { error: 'UI template not found' });
+      }
+
       // 1. Health check & status
       if (req.method === 'GET' && (pathname === '/' || pathname === '/health' || pathname === '/api/health')) {
+        // If browser visits root directly, redirect to /ui
+        const accept = req.headers.accept || '';
+        if (pathname === '/' && accept.includes('text/html')) {
+          res.writeHead(302, { Location: '/ui' });
+          return res.end();
+        }
+
         return sendJson(res, 200, {
           status: 'ok',
           service: 'prism-context-api',
           version: '0.1.0',
+          ui: '/ui',
           docs: '/openapi.json',
           endpoints: [
+            'GET /ui',
             'POST /api/inspect-website',
             'POST /api/index-repo',
             'POST /api/search-codebase',

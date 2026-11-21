@@ -128,11 +128,22 @@ Locally via tunnel:
 # Start the HTTP server on port 3000
 npm run start:http
 
+# Visit the interactive visual inspector playground in your browser:
+# http://localhost:3000/ui
+
 # Expose via free tunnel (e.g. Cloudflare Tunnel or ngrok)
 cloudflared tunnel --url http://localhost:3000
 # or: ngrok http 3000
 ```
 Or deploy the included `Dockerfile` directly to Fly.io, Railway, or any VPS.
+
+### 2. Interactive Web Inspector Playground
+
+When running in HTTP mode (`prism serve` or `npm run start:http`), Prism serves a visual inspector UI at `http://localhost:3000/ui`. Developers can input any live URL or mock data string to inspect:
+- Live Vector Wireframe SVG rendering
+- 2D Monospace Spatial Radar
+- Deterministic Design Audit scorecard (WCAG contrast, 4/8pt spacing, mobile touch targets, layer occlusion collisions, optical balance asymmetry, text clipping)
+- Extracted design tokens (Color palette swatches and typography scale)
 
 ### 2. Configure in ChatGPT
 1. Go to [ChatGPT GPT Editor](https://chatgpt.com/gpts/editor).
@@ -181,6 +192,14 @@ Prism comes with a native self-check suite verifying SSRF boundaries, Playwright
 
 ```bash
 npm test
+```
+
+### AI UI Readability Benchmark
+
+To measure and verify AI UI comprehension fidelity against mock benchmarks:
+
+```bash
+npx tsx benchmark/readability-eval.ts
 ```
 
 ---
