@@ -127,7 +127,12 @@ if (configuredCount === 0) {
 
 # 5. Verification
 echo "[4/4] Verifying installation..."
-node "${ENTRYPOINT}" --help >/dev/null 2>&1 || true
+if [ -s "${ENTRYPOINT}" ]; then
+  echo "  ✓ Prism binary verified at ${ENTRYPOINT}"
+else
+  echo "Error: Prism build failed to produce ${ENTRYPOINT}" >&2
+  exit 1
+fi
 
 echo ""
 echo "=== Prism Installed Successfully ==="
