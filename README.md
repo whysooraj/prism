@@ -7,17 +7,19 @@
 Deterministic web layout inspection and structural repository intelligence engine for AI coding agents via Model Context Protocol (MCP).
 
 <p align="center">
-  <a href="#supported-ai-agents--clients"><img src="https://img.shields.io/badge/Google_DeepMind-Antigravity-4285F4?style=flat-square&logo=google&logoColor=white" alt="Google DeepMind Antigravity" /></a>
-  <a href="#supported-ai-agents--clients"><img src="https://img.shields.io/badge/Anthropic-Claude_Code-D97706?style=flat-square&logo=anthropic&logoColor=white" alt="Anthropic Claude" /></a>
-  <a href="#supported-ai-agents--clients"><img src="https://img.shields.io/badge/OpenAI-Codex_&_ChatGPT-412991?style=flat-square&logo=openai&logoColor=white" alt="OpenAI Codex" /></a>
-  <a href="#supported-ai-agents--clients"><img src="https://img.shields.io/badge/Anysphere-Cursor-000000?style=flat-square&logo=cursor&logoColor=white" alt="Cursor" /></a>
-  <a href="#supported-ai-agents--clients"><img src="https://img.shields.io/badge/GitHub-Copilot_CLI-181717?style=flat-square&logo=github&logoColor=white" alt="GitHub Copilot" /></a>
-  <a href="#supported-ai-agents--clients"><img src="https://img.shields.io/badge/Microsoft-VS_Code_/_Cline-007ACC?style=flat-square&logo=visualstudiocode&logoColor=white" alt="VS Code Cline" /></a>
+  <a href="#supported-ai-agents--ecosystem"><img src="https://img.shields.io/badge/Google_DeepMind-Antigravity-4285F4?style=flat-square&logo=google&logoColor=white" alt="Google DeepMind Antigravity" /></a>
+  <a href="#supported-ai-agents--ecosystem"><img src="https://img.shields.io/badge/Anthropic-Claude_Code-D97706?style=flat-square&logo=anthropic&logoColor=white" alt="Anthropic Claude" /></a>
+  <a href="#supported-ai-agents--ecosystem"><img src="https://img.shields.io/badge/OpenAI-Codex_&_ChatGPT-412991?style=flat-square&logo=openai&logoColor=white" alt="OpenAI Codex" /></a>
+  <a href="#supported-ai-agents--ecosystem"><img src="https://img.shields.io/badge/Anysphere-Cursor-000000?style=flat-square&logo=cursor&logoColor=white" alt="Cursor" /></a>
+  <a href="#supported-ai-agents--ecosystem"><img src="https://img.shields.io/badge/OpenClaw-Supported-10B981?style=flat-square&logo=gnubash&logoColor=white" alt="OpenClaw" /></a>
+  <a href="#supported-ai-agents--ecosystem"><img src="https://img.shields.io/badge/Nous_Research-Hermes_Agent-6366F1?style=flat-square&logo=probot&logoColor=white" alt="Hermes Agent" /></a>
+  <a href="#supported-ai-agents--ecosystem"><img src="https://img.shields.io/badge/GitHub-Copilot_CLI-181717?style=flat-square&logo=github&logoColor=white" alt="GitHub Copilot" /></a>
+  <a href="#supported-ai-agents--ecosystem"><img src="https://img.shields.io/badge/Microsoft-VS_Code_/_Cline-007ACC?style=flat-square&logo=visualstudiocode&logoColor=white" alt="VS Code Cline" /></a>
 </p>
 
-## Quickstart (One-Line Installer)
+## Quickstart (One-Line Universal Installer)
 
-Install Prism and automatically configure all detected AI agents (Google DeepMind Antigravity, Anthropic Claude, Cursor, OpenAI Codex, OpenCode, Pi, Cline) in one command:
+Install Prism, auto-configure MCP endpoints, and inject the native `SKILL.md` specification across 70+ supported AI agents in one command:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/whysooraj/prism/main/install.sh | bash
@@ -25,8 +27,8 @@ curl -fsSL https://raw.githubusercontent.com/whysooraj/prism/main/install.sh | b
 
 The installer:
 1. Clones to `~/.prism` and builds the optimized binary.
-2. Auto-detects installed agent configuration files.
-3. Injects the `prism` MCP definition with zero manual JSON editing.
+2. Injects the `prism` MCP definition into all active client configs.
+3. Injects the standardized `SKILL.md` into Universal (`~/.agents/skills/`), OpenClaw, Hermes Agent, Antigravity, Claude Code, Cursor, and 14+ other skill registries.
 4. Verifies execution and reports status.
 
 ---
@@ -43,18 +45,27 @@ Prism bridges this gap by providing deterministic, structured context:
 
 ---
 
-## Supported AI Agents & Clients
+## Supported AI Agents & Ecosystem
 
-| Company / Organization | Agent / Client | Command / Runner | Auto-Configured Path |
+Prism adheres to both the **Model Context Protocol (MCP)** and the open **Agent Skills specification** (`agentskills.io` pioneered by Vercel Labs), supporting 70+ developer agents:
+
+| Agent / Framework | Creator / Organization | Integration Type | Auto-Configured Path |
 |---|---|---|---|
-| **Google DeepMind** | Antigravity (`agy`) / Gemini CLI | `agy -p "..."` | `~/.gemini/config/mcp_config.json` |
-| **Anthropic** | Claude Code & Claude Desktop | `claude` | `~/.claude.json` |
-| **Anysphere** | Cursor | Cursor Composer & Chat | `~/.config/Cursor/User/mcp.json` |
-| **OpenAI** | Codex CLI | `codex exec` | `~/.codex/mcp.json` |
-| **OpenCode Project** | OpenCode | `opencode run` | `~/.config/opencode/mcp.json` |
-| **Inflection AI** | Pi Agent | `pi --tools` | `~/.pi/mcp.json` |
-| **Cline Community** | Cline / Roo Code | VS Code Extension | `~/.config/Code/User/mcp.json` |
-| **GitHub / Microsoft** | GitHub Copilot CLI | `copilot -p "..."` | Configurable MCP |
+| **Antigravity (`agy`)** | Google DeepMind | Native MCP + Skill | `~/.gemini/config/mcp_config.json`<br>`~/.gemini/config/skills/prism/` |
+| **OpenClaw** | OpenClaw Community | MCP + Skill | `~/.openclaw/mcp.json`<br>`~/.openclaw/skills/prism/` |
+| **Hermes Agent** | Nous Research | MCP + Skill | `~/.hermes/mcp.json`<br>`~/.hermes/skills/prism/` |
+| **Claude Code & Desktop** | Anthropic | MCP + Skill | `~/.claude.json`<br>`~/.claude/skills/prism/` |
+| **Cursor** | Anysphere | MCP + Skill | `~/.config/Cursor/User/mcp.json`<br>`~/.cursor/skills/prism/` |
+| **OpenCode** | OpenCode Project | Native MCP + Universal Skill | `~/.config/opencode/mcp.json` |
+| **Pi Agent** | Inflection AI | MCP + Universal Skill | `~/.pi/mcp.json` |
+| **Codex CLI** | OpenAI | MCP + Universal Skill | `~/.codex/mcp.json` |
+| **Cline & Roo Code** | Roo / Cline Community | MCP + Universal Skill | `~/.config/Code/User/mcp.json`<br>`~/.roo/skills/prism/` |
+| **Devin for Terminal** | Cognition AI | MCP + Skill | `~/.config/devin/skills/prism/` |
+| **Goose** | Block | MCP + Skill | `~/.config/goose/skills/prism/` |
+| **Windsurf** | Codeium | Native MCP | `~/.codeium/windsurf/mcp_config.json` |
+| **OpenHands** | All-Hands AI | Universal Skill | `~/.openhands/skills/prism/` |
+| **Continue** | Continue Dev | Universal Skill | `~/.continue/skills/prism/` |
+| **Universal Agents** | Amp, Replit, Zed, Warp, Loaf, Kimi | Universal Skill | `~/.agents/skills/prism/` |
 
 ---
 
