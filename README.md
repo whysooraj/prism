@@ -1,90 +1,107 @@
-# ContextBridge
+<p align="center">
+  <img src="assets/logo.svg" alt="Prism Logo" width="100%" />
+</p>
 
-AI context infrastructure providing deterministic web layout inspection and structural repository intelligence via Model Context Protocol (MCP).
+# Prism
 
-## Problem
+Deterministic web layout inspection and structural repository intelligence engine for AI coding agents via Model Context Protocol (MCP).
 
-Giving an AI assistant a URL or Git repository typically yields one of two failure modes:
-1. **Websites**: assistants receive raw token-heavy HTML or downsampled screenshot images where layout math, contrast ratios, and alignment defects are invisible.
-2. **Repositories**: assistants receive whole-file text dumps or basic vector chunks that strip away AST symbols, call hierarchies, middleware chains, and import graphs.
+## Overview
 
-ContextBridge bridges this gap by extracting structured visual, spatial, and AST context directly into any MCP-compatible AI client.
+AI assistants typically fail at inspecting web applications and foreign codebases because they are fed low-signal representations:
+1. **Websites**: Assistants receive either 50KB of uncomputed HTML or blurry downsampled screenshots where exact padding, alignment drift, WCAG contrast violations, and touch target flaws cannot be measured.
+2. **Repositories**: Assistants either dump whole files into context (saturating tokens) or use dumb string grep, missing AST hierarchies, call graphs, middleware pipelines, and cross-file dependencies.
 
-## Core Capabilities
+Prism decomposes web URLs and Git repositories into deterministic, structured context:
+- **Web**: Exact CSS box model (`padding`, `margin`, `rect`), computed typography & color tokens, WCAG contrast audit, 4/8pt spacing validation, and vector wireframe SVGs.
+- **Code**: Ephemeral shallow repository acquisition, AST symbol parsing, caller/callee tracing, route mapping, and line-sliced retrieval.
 
-### 1. Web Layout & Design Intelligence
-- **Box Model Extraction**: computes exact padding, margin, border, coordinates, and bounding rectangles.
-- **Design Token Discovery**: deduplicates palette swatches, typography scales, and spacing ladders.
-- **Mathematical Design Audit**:
-  - WCAG AA contrast ratio validation.
-  - Spacing grid deviation detection (4/8pt adherence).
-  - Mobile touch target compliance (< 44x44px).
-  - Horizontal viewport overflow detection (`scrollWidth > clientWidth`).
-  - Anti-slop heuristic scan (generic AI gradients, card soup, ungrounded blur).
-- **Deterministic Wireframe SVG**: generates an exact vector layout schematic of the page without vision model tokens.
-- **SSRF Hardening**: blocks private IP subnets and internal loopback requests by default.
+## Architecture
 
-### 2. Repository Ingestion & Symbol Intelligence
-- **Fast Repository Acquisition**: clones remote GitHub repositories shallowly (`--depth 1`) or indexes local paths.
-- **Language-Aware AST Parsing**: extracts functions, classes, interfaces, types, imports, and exports (TypeScript, JavaScript, Python, Go, Rust).
-- **Route & Middleware Extraction**: detects HTTP handlers across Express, Fastify, Next.js App Router, FastAPI, Flask, and Gin.
-- **Surgical Code Retrieval**: serves exact line slices with line numbers for grounded context retrieval.
-- **Symbol Tracing**: identifies symbol definitions, call sites, and referencing modules across the codebase.
+```
+[ AI Assistant (Claude / Antigravity / Cursor / ChatGPT) ]
+                            │
+               MCP (JSON-RPC via stdio / SSE)
+                            │
+                            ▼
+                    [ PRISM ENGINE ]
+         ┌──────────────────┴──────────────────┐
+         ▼                                     ▼
+   [ Web Pipeline ]                    [ Repo Pipeline ]
+  • Playwright Chromium Engine        • Git Acquisition (--depth 1)
+  • Box Model & Layout Tree           • AST Compiler (TS/JS/Py/Go/Rs)
+  • Design Token Extractor            • Symbol Indexer & Call Graph
+  • WCAG Contrast Auditor             • Route & Middleware Analyzer
+  • Deterministic Wireframe SVG       • Surgical Line Slicer
+  • SSRF Safety Boundary              • Memory Cache
+```
 
-## Exposed MCP Tools
+## Tools Reference
 
-| Tool | Parameters | Description |
-|---|---|---|
-| `inspect_website` | `url`, `viewport?`, `includeWireframeSvg?`, `includeA11y?`, `allowLocalhost?` | Inspects DOM layout tree, box model, design tokens, and audit score |
-| `capture_screenshots` | `url`, `allowLocalhost?` | Captures desktop (1440x900) and mobile (390x844) PNG screenshots |
-| `index_repository` | `urlOrPath`, `branch?`, `authToken?` | Clones and indexes AST symbols, routes, and configs |
-| `search_codebase` | `query`, `kind?`, `limit?` | Searches indexed symbols and routes with relevance scoring |
-| `get_file` | `filePath`, `startLine?`, `endLine?` | Retrieves file contents with line-number prefixes |
-| `trace_symbol` | `symbolName` | Traces definitions, importers, and connected routes |
-| `explain_architecture` | None | Produces high-level architecture, entry points, and directory map |
+| Tool | Parameters | Output | Description |
+|---|---|---|---|
+| `inspect_website` | `url`: string<br>`viewport?`: `{ width, height }`<br>`includeWireframeSvg?`: boolean<br>`includeA11y?`: boolean<br>`allowLocalhost?`: boolean | JSON (`WebInspectionResult`) | Extracts layout tree, box model, design tokens, WCAG contrast score, and wireframe SVG |
+| `capture_screenshots` | `url`: string<br>`allowLocalhost?`: boolean | PNG Base64 (Desktop & Mobile) | Captures dual viewports (1440x900 and 390x844) |
+| `index_repository` | `urlOrPath`: string<br>`branch?`: string<br>`authToken?`: string | JSON (`RepoIndexSummary`) | Fetches repo, extracts AST symbols, builds file tree and routes |
+| `search_codebase` | `query`: string<br>`kind?`: `function\|class\|route...`<br>`limit?`: number | JSON (`CodeSymbol[]`) | Searches symbols and endpoints with AST relevance scoring |
+| `get_file` | `filePath`: string<br>`startLine?`: number<br>`endLine?`: number | Formatted text with line numbers | Retrieves exact lines with line number prefix (`42 \| code`) |
+| `trace_symbol` | `symbolName`: string | JSON (`SymbolTrace`) | Traces definitions, importers, and connected HTTP route handlers |
+| `explain_architecture` | None | JSON (`ArchitectureSummary`) | Summarizes tech stack, key configs, entry points, and directory map |
 
-## Installation & Setup
+## Getting Started
 
 ### Prerequisites
-- Node.js >= 20
-- Google Chrome or Chromium installed on the host system
+- Node.js >= 20.0.0
+- Google Chrome or Chromium installed on the host machine (`/usr/bin/google-chrome-stable` or `chromium`)
+- Git >= 2.30
 
-### Build
+### Installation
 ```bash
-git clone <repo-url> context-bridge
-cd context-bridge
+git clone https://github.com/whysooraj/prism.git
+cd prism
 npm install
 npm run build
 ```
 
-### Run Self-Checks
+### Self-Check Suite
+Prism includes an assert-based test suite that validates SSRF boundaries, Playwright DOM parsing, and AST symbol indexing:
 ```bash
 npm test
 ```
 
-## MCP Client Configuration
+## Client Configuration
 
-### Claude Code
-Add to `~/.claude.json` or project MCP configuration:
+### Claude Code (`~/.claude.json`)
 ```json
 {
   "mcpServers": {
-    "context-bridge": {
+    "prism": {
       "command": "node",
-      "args": ["/home/whysooraj/Projects/context-bridge/dist/index.js"]
+      "args": ["/absolute/path/to/prism/dist/index.js"]
     }
   }
 }
 ```
 
-### Claude Desktop / Cursor
-Add to your `claude_desktop_config.json`:
+### Claude Desktop / Cursor (`claude_desktop_config.json`)
 ```json
 {
   "mcpServers": {
-    "context-bridge": {
+    "prism": {
       "command": "node",
-      "args": ["/absolute/path/to/context-bridge/dist/index.js"]
+      "args": ["/absolute/path/to/prism/dist/index.js"]
+    }
+  }
+}
+```
+
+### Antigravity / Gemini CLI (`~/.gemini/config/mcp_config.json`)
+```json
+{
+  "mcpServers": {
+    "prism": {
+      "command": "node",
+      "args": ["/absolute/path/to/prism/dist/index.js"]
     }
   }
 }
@@ -92,6 +109,10 @@ Add to your `claude_desktop_config.json`:
 
 ## Security Model
 
-1. **Browser Isolation**: Each `inspect_website` call runs in an isolated ephemeral incognito context.
-2. **SSRF Guard**: Resolves and intercepts outbound requests to prevent targeting loopback interfaces (`127.0.0.1`, `localhost`) and private RFC-1918/link-local address spaces (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `169.254.169.254`).
-3. **Repository Quarantine**: Cloned repositories are isolated in `~/.cache/context-bridge/repos/` with shallow depth.
+- **SSRF Hardening**: By default, `inspect_website` intercepts and aborts requests to private IPv4/IPv6 subnets (`127.0.0.0/8`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `169.254.169.254`, `::1`) and local hostnames (`localhost`, `*.local`, `*.internal`).
+- **Browser Sandboxing**: Runs headless Chromium with isolated incognito contexts that terminate immediately upon evaluation completion.
+- **Controlled Ingestion**: Repositories are cloned shallowly with depth 1 into isolated user cache directories (`~/.cache/context-bridge/repos/`) and never shared across unauthorized boundaries.
+
+## License
+
+MIT

@@ -1,9 +1,10 @@
 {
-  "name": "context-bridge",
+  "name": "prism-mcp",
   "version": "0.1.0",
-  "description": "AI Context Infrastructure MCP Server for Web and Repository Intelligence",
+  "description": "AI Context Infrastructure MCP Server for Web Layout & Repository Intelligence",
   "type": "module",
   "bin": {
+    "prism": "./dist/index.js",
     "context-bridge": "./dist/index.js"
   },
   "scripts": {

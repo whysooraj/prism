@@ -18,11 +18,11 @@ async function main() {
   });
 
   await server.connect(transport);
-  console.error('[context-bridge] MCP server running on stdio');
+  console.error('[prism] MCP server running on stdio');
 }
 
 main().catch(async (err) => {
-  console.error('[context-bridge] Fatal error:', err);
+  console.error('[prism] Fatal error:', err);
   await closeBrowser();
   process.exit(1);
 });

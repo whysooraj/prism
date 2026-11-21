@@ -6,7 +6,7 @@ import type { SymbolKind } from './types.js';
 
 export function createServer(): McpServer {
   const server = new McpServer({
-    name: 'context-bridge',
+    name: 'prism',
     version: '0.1.0'
   });
 
