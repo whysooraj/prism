@@ -11,6 +11,7 @@ export interface BenchmarkCase {
     contrastFailures?: number;
     spacingDeviations?: number;
     touchTargetViolations?: number;
+    occlusionFailures?: number;
     horizontalOverflow?: boolean;
     aiTropes?: number;
   };
@@ -60,6 +61,23 @@ export const BENCHMARK_CASES: BenchmarkCase[] = [
       </body></html>
     `,
     expectedIssues: { contrastFailures: 1, spacingDeviations: 2, touchTargetViolations: 1, horizontalOverflow: true, aiTropes: 1 }
+  },
+
+  // 3. Stacking Context & Layer Occlusion Defect
+  {
+    id: 'layer-occlusion',
+    name: 'Layer Occlusion Defect',
+    html: `
+      <!DOCTYPE html><html><head><style>
+        body { margin: 0; background: #fff; font-family: sans-serif; }
+        .underneath-btn { position: absolute; top: 20px; left: 20px; width: 120px; height: 48px; background: #3b82f6; color: #fff; z-index: 1; }
+        .floating-overlay { position: absolute; top: 0; left: 0; width: 200px; height: 100px; background: rgba(0,0,0,0.8); z-index: 99; color: #fff; padding: 16px; }
+      </style></head><body>
+        <button class="underneath-btn">Hidden CTA</button>
+        <div class="floating-overlay">Blocking Modal Banner</div>
+      </body></html>
+    `,
+    expectedIssues: { occlusionFailures: 1 }
   }
 ];
 
@@ -97,6 +115,12 @@ export async function runBenchmark(): Promise<{
     // Verify horizontal overflow detection
     if (tc.expectedIssues.horizontalOverflow !== undefined && inspection.critique.horizontalOverflow !== tc.expectedIssues.horizontalOverflow) {
       discrepancies.push(`Failed horizontal overflow check (expected ${tc.expectedIssues.horizontalOverflow}, got ${inspection.critique.horizontalOverflow})`);
+    }
+
+    // Verify occlusion detection
+    const actualOcclusionFails = inspection.critique.occlusionIssues.length;
+    if (tc.expectedIssues.occlusionFailures !== undefined && actualOcclusionFails < tc.expectedIssues.occlusionFailures) {
+      discrepancies.push(`Missed ${tc.expectedIssues.occlusionFailures - actualOcclusionFails} layer occlusion defects`);
     }
 
     // Calculate AI Readability / Comprehension Fidelity (100 - penalties for missed defects)

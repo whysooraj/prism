@@ -1,6 +1,7 @@
 import type { Page } from 'playwright-core';
 import { createSafeContext } from './browser.js';
 import { generateWireframeSvg } from './layout.js';
+import { generateAsciiRadar } from './ascii-radar.js';
 import { auditDesign, calculateContrastRatio, parseRgb } from './design-audit.js';
 import type {
   ContrastIssue,
@@ -60,7 +61,20 @@ export async function inspectWebsite(options: InspectOptions): Promise<WebInspec
       const contrastCandidateList: { element: string; selector: string; fg: string; bg: string; text: string; fontSize: number }[] = [];
       const spacingCandidateList: { element: string; selector: string; property: string; value: string; num: number }[] = [];
       const touchTargetCandidateList: { element: string; selector: string; width: number; height: number }[] = [];
+      const occlusionCandidateList: { targetElement: string; targetSelector: string; occludedBy: string; occludedBySelector: string; point: { x: number; y: number } }[] = [];
       const aiTropes: string[] = [];
+
+      function getEffectiveBg(curr: Element | null): string {
+        while (curr && curr !== document.documentElement) {
+          const pStyle = window.getComputedStyle(curr);
+          const pBg = pStyle.backgroundColor;
+          if (pBg && pBg !== 'rgba(0, 0, 0, 0)' && pBg !== 'transparent') {
+            return pBg;
+          }
+          curr = curr.parentElement;
+        }
+        return 'rgb(255, 255, 255)';
+      }
 
       // Check horizontal overflow
       const horizontalOverflow = document.documentElement.scrollWidth > window.innerWidth + 2;
@@ -194,20 +208,40 @@ export async function inspectWebsite(options: InspectOptions): Promise<WebInspec
               height: Math.round(rect.height)
             });
           }
+
+          // Check visual occlusion / overlapping layers blocking click
+          const cx = Math.round(rect.x + rect.width / 2);
+          const cy = Math.round(rect.y + rect.height / 2);
+          if (cx >= 0 && cx < window.innerWidth && cy >= 0 && cy < window.innerHeight) {
+            const topEl = document.elementFromPoint(cx, cy);
+            if (topEl && topEl !== el && !el.contains(topEl) && !topEl.contains(el)) {
+              const topStyle = window.getComputedStyle(topEl);
+              if (topStyle.pointerEvents !== 'none' && topStyle.display !== 'none' && parseFloat(topStyle.opacity) > 0) {
+                occlusionCandidateList.push({
+                  targetElement: tag,
+                  targetSelector: selector,
+                  occludedBy: topEl.tagName.toLowerCase(),
+                  occludedBySelector: getSelector(topEl),
+                  point: { x: cx, y: cy }
+                });
+              }
+            }
+          }
         }
 
-        // Text contrast candidates
+        // Text contrast candidates (using effective resolved background)
         const directText = Array.from(el.childNodes)
           .filter((n) => n.nodeType === Node.TEXT_NODE && (n.textContent || '').trim().length > 0)
           .map((n) => n.textContent?.trim())
           .join(' ');
 
-        if (directText.length > 0 && color && bg && bg !== 'rgba(0, 0, 0, 0)') {
+        const effectiveBg = (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') ? bg : getEffectiveBg(el.parentElement);
+        if (directText.length > 0 && color && effectiveBg) {
           contrastCandidateList.push({
             element: tag,
             selector,
             fg: color,
-            bg,
+            bg: effectiveBg,
             text: directText.slice(0, 30),
             fontSize: parseFloat(style.fontSize) || 16
           });
@@ -273,6 +307,7 @@ export async function inspectWebsite(options: InspectOptions): Promise<WebInspec
         contrastCandidateList,
         spacingCandidateList,
         touchTargetCandidateList,
+        occlusionCandidateList,
         horizontalOverflow,
         aiTropes,
         layoutRoot
@@ -346,6 +381,7 @@ export async function inspectWebsite(options: InspectOptions): Promise<WebInspec
       contrastChecks: contrastIssues,
       spacingChecks: spacingIssues,
       touchTargets: touchTargetIssues,
+      occlusionChecks: inspectionData.occlusionCandidateList,
       horizontalOverflow: inspectionData.horizontalOverflow,
       aiTropes: inspectionData.aiTropes
     });
@@ -354,6 +390,9 @@ export async function inspectWebsite(options: InspectOptions): Promise<WebInspec
     const wireframeSvg = includeWireframeSvg
       ? generateWireframeSvg(inspectionData.layoutRoot, viewport)
       : undefined;
+
+    // 2D Spatial ASCII Radar
+    const asciiRadar = generateAsciiRadar(inspectionData.layoutRoot, viewport);
 
     // Optional A11y Tree
     let accessibilityTree: any = undefined;
@@ -378,6 +417,7 @@ export async function inspectWebsite(options: InspectOptions): Promise<WebInspec
       critique,
       layoutTree: inspectionData.layoutRoot,
       interactiveElements: inspectionData.interactiveList.slice(0, 40),
+      asciiRadar,
       wireframeSvg,
       accessibilityTree
     };

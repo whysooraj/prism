@@ -87,6 +87,14 @@ export interface TouchTargetIssue {
   height: number;
 }
 
+export interface OcclusionIssue {
+  targetElement: string;
+  targetSelector: string;
+  occludedBy: string;
+  occludedBySelector: string;
+  point: { x: number; y: number };
+}
+
 export interface DesignCritique {
   score: number; // 0 - 100
   horizontalOverflow: boolean;
@@ -96,6 +104,7 @@ export interface DesignCritique {
   contrastIssues: ContrastIssue[];
   spacingIssues: SpacingIssue[];
   touchTargetIssues: TouchTargetIssue[];
+  occlusionIssues: OcclusionIssue[];
   summary: string[];
 }
 
@@ -117,6 +126,7 @@ export interface WebInspectionResult {
   critique: DesignCritique;
   layoutTree: LayoutNode;
   interactiveElements: InteractiveElement[];
+  asciiRadar?: string;
   wireframeSvg?: string;
   accessibilityTree?: any;
 }

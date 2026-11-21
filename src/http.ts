@@ -127,6 +127,7 @@ export function createHttpServer(): http.Server {
           palette: result.palette,
           typography: result.typography,
           interactiveElementsCount: result.interactiveElements.length,
+          asciiRadar: result.asciiRadar,
           wireframeSvg: result.wireframeSvg
         });
       }

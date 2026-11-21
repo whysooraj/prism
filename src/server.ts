@@ -58,6 +58,7 @@ export function createServer(): McpServer {
                   palette: result.palette,
                   typography: result.typography,
                   interactiveElements: result.interactiveElements,
+                  asciiRadar: result.asciiRadar,
                   wireframeSvg: result.wireframeSvg,
                   accessibilityTree: result.accessibilityTree,
                   layoutTree: result.layoutTree

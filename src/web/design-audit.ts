@@ -2,6 +2,7 @@ import type {
   ContrastIssue,
   DesignCritique,
   DesignPalette,
+  OcclusionIssue,
   SpacingIssue,
   TouchTargetIssue,
   TypographyScale
@@ -65,6 +66,7 @@ export function auditDesign(params: {
   contrastChecks: ContrastIssue[];
   spacingChecks: SpacingIssue[];
   touchTargets: TouchTargetIssue[];
+  occlusionChecks: OcclusionIssue[];
   horizontalOverflow: boolean;
   aiTropes: string[];
 }): DesignCritique {
@@ -73,6 +75,7 @@ export function auditDesign(params: {
     contrastChecks,
     spacingChecks,
     touchTargets,
+    occlusionChecks,
     horizontalOverflow,
     aiTropes
   } = params;
@@ -108,6 +111,13 @@ export function auditDesign(params: {
     summary.push(`Found ${touchTargets.length} interactive elements below mobile 44x44px target standard (-${penalty} pts)`);
   }
 
+  // 4.5. Occlusion / Stacking Context bugs (critical UX defect)
+  if (occlusionChecks.length > 0) {
+    const penalty = Math.min(25, occlusionChecks.length * 10);
+    score -= penalty;
+    summary.push(`Critical visual occlusion detected: ${occlusionChecks.length} interactive elements blocked by overlapping layers (-${penalty} pts)`);
+  }
+
   // 5. Palette sprawl
   const paletteSprawl = palette.totalUniqueColors > 18;
   if (paletteSprawl) {
@@ -135,6 +145,7 @@ export function auditDesign(params: {
     contrastIssues: failingContrast.slice(0, 10),
     spacingIssues: spacingChecks.slice(0, 10),
     touchTargetIssues: touchTargets.slice(0, 10),
+    occlusionIssues: occlusionChecks.slice(0, 10),
     summary
   };
 }
