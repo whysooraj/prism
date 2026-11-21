@@ -15,6 +15,8 @@ export interface BenchmarkCase {
     horizontalOverflow?: boolean;
     asymmetricPaddingFailures?: number;
     textOverflowFailures?: number;
+    focusOutlineFailures?: number;
+    disabledAffordanceFailures?: number;
     aiTropes?: number;
   };
 }
@@ -173,6 +175,86 @@ export const BENCHMARK_CASES: BenchmarkCase[] = [
       </body></html>
     `,
     expectedIssues: { contrastFailures: 0, spacingDeviations: 0, touchTargetViolations: 0, horizontalOverflow: false, aiTropes: 0 }
+  },
+
+  // 7. Typography Descender Clipping (Line-height collapse)
+  {
+    id: 'descender-clipping',
+    name: 'Typography Line-Height Collapse Defect',
+    html: `
+      <!DOCTYPE html><html><head><style>
+        body { margin: 0; background: #fff; font-family: sans-serif; }
+        .clipped-title {
+          font-size: 32px;
+          line-height: 20px;
+          color: #0f172a;
+          overflow: hidden;
+          height: 28px;
+        }
+      </style></head><body>
+        <h1 class="clipped-title">Typography Jumping Quick Brown Fox</h1>
+      </body></html>
+    `,
+    expectedIssues: { textOverflowFailures: 1 }
+  },
+
+  // 8. Focus Outline Suppressed
+  {
+    id: 'focus-outline-suppressed',
+    name: 'Focus Outline Suppressed (A11y Defect)',
+    html: `
+      <!DOCTYPE html><html><head><style>
+        body { margin: 0; background: #fff; font-family: sans-serif; }
+        .bad-btn {
+          padding: 12px 24px;
+          background: #3b82f6;
+          color: #fff;
+          border: none;
+          outline: none;
+        }
+      </style></head><body>
+        <button class="bad-btn">Search Query</button>
+      </body></html>
+    `,
+    expectedIssues: { focusOutlineFailures: 1 }
+  },
+
+  // 9. Disabled Button Affordance Failure
+  {
+    id: 'indistinguishable-disabled',
+    name: 'Disabled Affordance Failure Defect',
+    html: `
+      <!DOCTYPE html><html><head><style>
+        body { margin: 0; background: #fff; font-family: sans-serif; }
+        .btn-active { background: #2563eb; color: #ffffff; padding: 12px 24px; border: none; }
+        .btn-disabled { background: #2563eb; color: #ffffff; padding: 12px 24px; border: none; cursor: not-allowed; }
+      </style></head><body>
+        <button class="btn-active">Save Changes</button>
+        <button class="btn-disabled" disabled>Save Changes</button>
+      </body></html>
+    `,
+    expectedIssues: { disabledAffordanceFailures: 1 }
+  },
+
+  // 10. Sticky / Fixed Header Occlusion
+  {
+    id: 'sticky-header-overlap',
+    name: 'Fixed Header Top Landmark Occlusion',
+    html: `
+      <!DOCTYPE html><html><head><style>
+        body { margin: 0; background: #fff; font-family: sans-serif; }
+        nav { position: fixed; top: 0; left: 0; width: 100%; height: 72px; background: #0f172a; color: #fff; z-index: 100; }
+        main { margin-top: 0px; padding: 16px; }
+        h1 { font-size: 24px; color: #000; }
+      </style></head><body>
+        <nav>Navigation Bar</nav>
+        <main>
+          <h1>Content Obscured Behind Nav</h1>
+          <p>Trapped text</p>
+        </main>
+      </body></html>
+    `,
+    expectedIssues: { occlusionFailures: 1 }
   }
 ];
 
@@ -228,6 +310,18 @@ export async function runBenchmark(): Promise<{
     const actualOverflowFails = inspection.critique.textOverflowIssues ? inspection.critique.textOverflowIssues.length : 0;
     if (tc.expectedIssues.textOverflowFailures !== undefined && actualOverflowFails < tc.expectedIssues.textOverflowFailures) {
       discrepancies.push(`Missed ${tc.expectedIssues.textOverflowFailures - actualOverflowFails} text overflow defects`);
+    }
+
+    // Verify focus outline suppression detection
+    const actualFocusOutlineFails = inspection.critique.focusOutlineIssues ? inspection.critique.focusOutlineIssues.length : 0;
+    if (tc.expectedIssues.focusOutlineFailures !== undefined && actualFocusOutlineFails < tc.expectedIssues.focusOutlineFailures) {
+      discrepancies.push(`Missed ${tc.expectedIssues.focusOutlineFailures - actualFocusOutlineFails} focus outline suppression defects`);
+    }
+
+    // Verify disabled affordance detection
+    const actualDisabledFails = inspection.critique.disabledAffordanceIssues ? inspection.critique.disabledAffordanceIssues.length : 0;
+    if (tc.expectedIssues.disabledAffordanceFailures !== undefined && actualDisabledFails < tc.expectedIssues.disabledAffordanceFailures) {
+      discrepancies.push(`Missed ${tc.expectedIssues.disabledAffordanceFailures - actualDisabledFails} disabled affordance defects`);
     }
 
     // Calculate AI Readability / Comprehension Fidelity (100 - penalties for missed defects)

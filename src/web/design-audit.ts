@@ -3,6 +3,8 @@ import type {
   ContrastIssue,
   DesignCritique,
   DesignPalette,
+  DisabledAffordanceIssue,
+  FocusOutlineIssue,
   OcclusionIssue,
   SpacingIssue,
   TextOverflowIssue,
@@ -71,6 +73,8 @@ export function auditDesign(params: {
   occlusionChecks: OcclusionIssue[];
   asymmetricPaddingChecks?: AsymmetricPaddingIssue[];
   textOverflowChecks?: TextOverflowIssue[];
+  focusOutlineChecks?: FocusOutlineIssue[];
+  disabledAffordanceChecks?: DisabledAffordanceIssue[];
   horizontalOverflow: boolean;
   aiTropes: string[];
 }): DesignCritique {
@@ -82,6 +86,8 @@ export function auditDesign(params: {
     occlusionChecks,
     asymmetricPaddingChecks = [],
     textOverflowChecks = [],
+    focusOutlineChecks = [],
+    disabledAffordanceChecks = [],
     horizontalOverflow,
     aiTropes
   } = params;
@@ -122,6 +128,20 @@ export function auditDesign(params: {
     const penalty = Math.min(10, asymmetricPaddingChecks.length * 2);
     score -= penalty;
     summary.push(`Found ${asymmetricPaddingChecks.length} interactive elements with asymmetric padding causing optical imbalance (-${penalty} pts)`);
+  }
+
+  // 3.7 Focus outline suppression (A11y defect)
+  if (focusOutlineChecks.length > 0) {
+    const penalty = Math.min(15, focusOutlineChecks.length * 5);
+    score -= penalty;
+    summary.push(`Found ${focusOutlineChecks.length} interactive elements suppressing focus outline without replacement (-${penalty} pts)`);
+  }
+
+  // 3.8 Disabled state affordance failure
+  if (disabledAffordanceChecks.length > 0) {
+    const penalty = Math.min(15, disabledAffordanceChecks.length * 5);
+    score -= penalty;
+    summary.push(`Found ${disabledAffordanceChecks.length} disabled elements visually indistinguishable from active state (-${penalty} pts)`);
   }
 
   // 4. Touch targets
@@ -168,6 +188,8 @@ export function auditDesign(params: {
     occlusionIssues: occlusionChecks.slice(0, 10),
     asymmetricPaddingIssues: asymmetricPaddingChecks.slice(0, 10),
     textOverflowIssues: textOverflowChecks.slice(0, 10),
+    focusOutlineIssues: focusOutlineChecks.slice(0, 10),
+    disabledAffordanceIssues: disabledAffordanceChecks.slice(0, 10),
     summary
   };
 }

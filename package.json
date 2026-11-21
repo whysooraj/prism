@@ -18,7 +18,7 @@
     "start": "tsx src/index.ts",
     "serve": "tsx src/http.ts",
     "start:http": "node dist/http.js",
-    "test": "node --test"
+    "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.6.1",

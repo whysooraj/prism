@@ -63,7 +63,10 @@ export async function inspectWebsite(options: InspectOptions): Promise<WebInspec
       const touchTargetCandidateList: { element: string; selector: string; width: number; height: number }[] = [];
       const occlusionCandidateList: { targetElement: string; targetSelector: string; occludedBy: string; occludedBySelector: string; point: { x: number; y: number } }[] = [];
       const asymmetricPaddingCandidateList: { element: string; selector: string; left: number; right: number; top: number; bottom: number; reason: string }[] = [];
-      const textOverflowCandidateList: { element: string; selector: string; text: string; scrollWidth: number; clientWidth: number }[] = [];
+      const textOverflowCandidateList: { element: string; selector: string; text: string; scrollWidth: number; clientWidth: number; scrollHeight?: number; clientHeight?: number; verticalClipping?: boolean; collapsedLineHeight?: boolean }[] = [];
+      const focusOutlineCandidateList: { element: string; selector: string; reason: string }[] = [];
+      const disabledAffordanceCandidateList: { element: string; selector: string; reason: string }[] = [];
+      const buttonAffordanceList: { element: string; selector: string; disabled: boolean; bg: string; color: string; opacity: number }[] = [];
       const aiTropes: string[] = [];
 
       function parseRgba(str: string): [number, number, number, number] | null {
@@ -279,9 +282,44 @@ export async function inspectWebsite(options: InspectOptions): Promise<WebInspec
             });
           }
 
-          // Check visual occlusion / overlapping layers blocking click
-          const cx = Math.round(rect.x + rect.width / 2);
-          const cy = Math.round(rect.y + rect.height / 2);
+          // Check focus outline suppression
+          const outline = style.outline;
+          const outlineStyle = style.outlineStyle;
+          const outlineWidth = parsePx(style.outlineWidth);
+          const boxShadow = style.boxShadow;
+          if ((outline === 'none' || outlineStyle === 'none' || outlineWidth === 0 || (el as HTMLElement).style.outline === 'none') && (!boxShadow || boxShadow === 'none')) {
+            focusOutlineCandidateList.push({
+              element: tag,
+              selector,
+              reason: `${selector} suppresses focus outline (${outline || 'none'}) without an alternative visible indicator`
+            });
+          }
+
+          // Record button affordance
+          if (['button', 'input'].includes(tag) || el.getAttribute('role') === 'button') {
+            const isDis = !!(el as HTMLButtonElement).disabled || el.getAttribute('aria-disabled') === 'true' || el.classList.contains('disabled');
+            buttonAffordanceList.push({
+              element: tag,
+              selector,
+              disabled: isDis,
+              bg: style.backgroundColor,
+              color: style.color,
+              opacity: parseFloat(style.opacity) || 1.0
+            });
+          }
+        }
+
+        // Direct text extraction
+        const directText = Array.from(el.childNodes)
+          .filter((n) => n.nodeType === Node.TEXT_NODE && (n.textContent || '').trim().length > 0)
+          .map((n) => n.textContent?.trim())
+          .join(' ');
+
+        // Check visual occlusion / overlapping layers blocking elements (interactive + landmark text)
+        const isLandmarkOrText = ['h1', 'h2', 'h3', 'h4', 'main'].includes(tag) || (directText.length > 0 && rect.y < 120);
+        if ((isInteractive || isLandmarkOrText) && rect.width > 0 && rect.height > 0) {
+          const cx = Math.round(rect.x + Math.min(24, rect.width / 2));
+          const cy = Math.round(rect.y + Math.min(24, rect.height / 2));
           if (cx >= 0 && cx < window.innerWidth && cy >= 0 && cy < window.innerHeight) {
             const topEl = document.elementFromPoint(cx, cy);
             if (topEl && topEl !== el && !el.contains(topEl) && !topEl.contains(el)) {
@@ -300,23 +338,56 @@ export async function inspectWebsite(options: InspectOptions): Promise<WebInspec
         }
 
         // Text contrast candidates (using effective resolved background)
-        const directText = Array.from(el.childNodes)
-          .filter((n) => n.nodeType === Node.TEXT_NODE && (n.textContent || '').trim().length > 0)
-          .map((n) => n.textContent?.trim())
-          .join(' ');
 
-        // Check text overflow and unintentional clipping
+        // Check text overflow, vertical clipping, and collapsed line-height
         if (directText.length > 0 && rect.width > 0 && rect.height > 0) {
           const scrollW = (el as HTMLElement).scrollWidth;
           const clientW = (el as HTMLElement).clientWidth;
+          const scrollH = (el as HTMLElement).scrollHeight;
+          const clientH = (el as HTMLElement).clientHeight;
           const overflowX = style.overflowX;
+          const overflowY = style.overflowY;
+
+          const fSize = parseFloat(style.fontSize) || 16;
+          const lHeight = parseFloat(style.lineHeight) || fSize;
+
           if (scrollW > clientW + 2 && (overflowX === 'hidden' || overflowX === 'clip')) {
             textOverflowCandidateList.push({
               element: tag,
               selector,
               text: directText.slice(0, 40),
               scrollWidth: scrollW,
-              clientWidth: clientW
+              clientWidth: clientW,
+              scrollHeight: scrollH,
+              clientHeight: clientH
+            });
+          }
+
+          // Collapsed line-height (descender clipping)
+          if (fSize >= 14 && lHeight > 0 && lHeight < fSize * 0.85) {
+            textOverflowCandidateList.push({
+              element: tag,
+              selector,
+              text: directText.slice(0, 40),
+              scrollWidth: scrollW,
+              clientWidth: clientW,
+              scrollHeight: scrollH,
+              clientHeight: clientH,
+              collapsedLineHeight: true
+            });
+          }
+
+          // Vertical clipping
+          if (scrollH > clientH + 2 && (overflowY === 'hidden' || overflowY === 'clip')) {
+            textOverflowCandidateList.push({
+              element: tag,
+              selector,
+              text: directText.slice(0, 40),
+              scrollWidth: scrollW,
+              clientWidth: clientW,
+              scrollHeight: scrollH,
+              clientHeight: clientH,
+              verticalClipping: true
             });
           }
         }
@@ -403,6 +474,20 @@ export async function inspectWebsite(options: InspectOptions): Promise<WebInspec
         children: []
       };
 
+      // Cross-element disabled affordance comparison
+      const disabledButtons = buttonAffordanceList.filter((b) => b.disabled);
+      const activeButtons = buttonAffordanceList.filter((b) => !b.disabled);
+      for (const dis of disabledButtons) {
+        const matchActive = activeButtons.find((act) => act.bg === dis.bg && act.color === dis.color && Math.abs(act.opacity - dis.opacity) < 0.05);
+        if (matchActive) {
+          disabledAffordanceCandidateList.push({
+            element: dis.element,
+            selector: dis.selector,
+            reason: `Disabled element ${dis.selector} has identical background (${dis.bg}) and opacity (${dis.opacity}) to active element ${matchActive.selector}`
+          });
+        }
+      }
+
       return {
         backgroundsMap,
         textColorsMap,
@@ -414,6 +499,8 @@ export async function inspectWebsite(options: InspectOptions): Promise<WebInspec
         occlusionCandidateList,
         asymmetricPaddingCandidateList,
         textOverflowCandidateList,
+        focusOutlineCandidateList,
+        disabledAffordanceCandidateList,
         horizontalOverflow,
         aiTropes,
         layoutRoot
@@ -490,6 +577,8 @@ export async function inspectWebsite(options: InspectOptions): Promise<WebInspec
       occlusionChecks: inspectionData.occlusionCandidateList,
       asymmetricPaddingChecks: inspectionData.asymmetricPaddingCandidateList,
       textOverflowChecks: inspectionData.textOverflowCandidateList,
+      focusOutlineChecks: inspectionData.focusOutlineCandidateList,
+      disabledAffordanceChecks: inspectionData.disabledAffordanceCandidateList,
       horizontalOverflow: inspectionData.horizontalOverflow,
       aiTropes: inspectionData.aiTropes
     });

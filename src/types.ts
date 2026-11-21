@@ -101,6 +101,10 @@ export interface TextOverflowIssue {
   text: string;
   scrollWidth: number;
   clientWidth: number;
+  scrollHeight?: number;
+  clientHeight?: number;
+  verticalClipping?: boolean;
+  collapsedLineHeight?: boolean;
 }
 
 export interface AsymmetricPaddingIssue {
@@ -110,6 +114,18 @@ export interface AsymmetricPaddingIssue {
   right: number;
   top: number;
   bottom: number;
+  reason: string;
+}
+
+export interface FocusOutlineIssue {
+  element: string;
+  selector: string;
+  reason: string;
+}
+
+export interface DisabledAffordanceIssue {
+  element: string;
+  selector: string;
   reason: string;
 }
 
@@ -125,6 +141,8 @@ export interface DesignCritique {
   occlusionIssues: OcclusionIssue[];
   asymmetricPaddingIssues?: AsymmetricPaddingIssue[];
   textOverflowIssues?: TextOverflowIssue[];
+  focusOutlineIssues?: FocusOutlineIssue[];
+  disabledAffordanceIssues?: DisabledAffordanceIssue[];
   summary: string[];
 }
 

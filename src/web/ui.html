@@ -573,8 +573,28 @@
         defectHtml += `<div class="defect-group"><div class="defect-header"><span>Text Overflow / Clipping</span><span>${critique.textOverflowIssues.length}</span></div>`;
         defectHtml += critique.textOverflowIssues.map(t => `
           <div class="defect-card">
-            <div><strong>${t.selector}</strong> (scrollWidth ${t.scrollWidth}px > clientWidth ${t.clientWidth}px)</div>
+            <div><strong>${t.selector}</strong> (${t.collapsedLineHeight ? 'line-height collapse' : 'scrollWidth ' + t.scrollWidth + 'px > clientWidth ' + t.clientWidth + 'px'})</div>
             <div style="color: var(--text-muted); font-size: 11px;">"${t.text}"</div>
+          </div>
+        `).join('');
+        defectHtml += `</div>`;
+      }
+
+      if (critique.focusOutlineIssues && critique.focusOutlineIssues.length > 0) {
+        defectHtml += `<div class="defect-group"><div class="defect-header"><span>Focus Outline Suppressions</span><span>${critique.focusOutlineIssues.length}</span></div>`;
+        defectHtml += critique.focusOutlineIssues.map(f => `
+          <div class="defect-card">
+            <div><strong>${f.selector}</strong>: ${f.reason}</div>
+          </div>
+        `).join('');
+        defectHtml += `</div>`;
+      }
+
+      if (critique.disabledAffordanceIssues && critique.disabledAffordanceIssues.length > 0) {
+        defectHtml += `<div class="defect-group"><div class="defect-header"><span>Disabled State Affordance Failures</span><span>${critique.disabledAffordanceIssues.length}</span></div>`;
+        defectHtml += critique.disabledAffordanceIssues.map(d => `
+          <div class="defect-card">
+            <div><strong>${d.selector}</strong>: ${d.reason}</div>
           </div>
         `).join('');
         defectHtml += `</div>`;
