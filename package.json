@@ -2,6 +2,12 @@
   "name": "prism-mcp",
   "version": "0.1.0",
   "description": "AI Context Infrastructure MCP Server for Web Layout & Repository Intelligence",
+  "license": "MIT",
+  "author": "whysooraj",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/whysooraj/prism.git"
+  },
   "type": "module",
   "bin": {
     "prism": "./dist/index.js",
