@@ -57,6 +57,10 @@ export class RepositoryIndexManager {
     return this.routes;
   }
 
+  public getTotalSymbols(): number {
+    return this.symbols.length;
+  }
+
   public search(query: string, kind?: SymbolKind, limit = 20): SearchMatch[] {
     const qLower = query.toLowerCase().trim();
     const queryTerms = qLower.split(/\s+/).filter(Boolean);

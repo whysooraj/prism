@@ -39,6 +39,7 @@ export async function indexRepository(
   branch: string;
   commitHash?: string;
   totalFiles: number;
+  totalSymbols: number;
   languages: Record<string, number>;
   entryPoints: string[];
   routesCount: number;
@@ -133,6 +134,7 @@ export async function indexRepository(
     branch: acq.branch,
     commitHash: acq.commitHash,
     totalFiles: metadata.totalFiles,
+    totalSymbols: manager.getTotalSymbols(),
     languages: metadata.languages,
     entryPoints: metadata.entryPoints,
     routesCount: metadata.routes.length,
