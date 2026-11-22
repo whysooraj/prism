@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { getActiveIndex } from '../repo/repo-inspector.js';
-import type { RouteDefinition } from '../types.js';
+import type { RouteDefinition, CompactTaskContext, WebInspectionResult } from '../types.js';
 
 export interface SourceCandidate {
   file: string;
@@ -172,6 +172,22 @@ export function findUiSource(options: FindUiSourceOptions): UiSourceCorrelationR
       evidence.push(`Entry component for current route (${pathname})`);
     }
 
+    // Check AST symbols exported in this file
+    const fileSymbols = index.getAllSymbols().filter((s) => s.filePath === relPath);
+    for (const sym of fileSymbols) {
+      const symLower = sym.name.toLowerCase();
+      if (
+        cleanSelector.toLowerCase().includes(symLower) ||
+        (targetId && targetId.toLowerCase().includes(symLower)) ||
+        classMatches.some((c) => c.toLowerCase() === symLower || c.toLowerCase().includes(symLower)) ||
+        (tag && tag.toLowerCase() === symLower)
+      ) {
+        score += 0.35;
+        evidence.push(`Direct AST symbol match: ${sym.name} (${sym.kind})`);
+        if (!hitLine) hitLine = sym.startLine;
+      }
+    }
+
     // Related styles
     const baseName = path.basename(relPath, path.extname(relPath));
     const potentialCss = [
@@ -210,5 +226,128 @@ export function findUiSource(options: FindUiSourceOptions): UiSourceCorrelationR
     routeFile,
     sourceCandidates: candidates.slice(0, 5),
     relatedFiles: Array.from(relatedFiles).slice(0, 5)
+  };
+}
+
+export interface GetContextOptions {
+  repoIdentifier?: string;
+  urlOrRoute?: string;
+  selector?: string;
+  textSnippet?: string;
+  tag?: string;
+  inspectionResult?: WebInspectionResult;
+}
+
+export function getContext(options: GetContextOptions): CompactTaskContext {
+  const {
+    repoIdentifier,
+    urlOrRoute = '/',
+    selector = '',
+    textSnippet = '',
+    tag = '',
+    inspectionResult
+  } = options;
+
+  // 1. Correlate element to source candidates
+  const correlation = findUiSource({
+    repoIdentifier,
+    urlOrRoute,
+    selector,
+    textSnippet,
+    tag
+  });
+
+  // 2. Extract bounds & visual issues if inspectionResult is provided
+  let bounds: { x: number; y: number; width: number; height: number } | undefined = undefined;
+  const issues: string[] = [];
+
+  if (inspectionResult) {
+    if (selector) {
+      const el = inspectionResult.interactiveElements?.find(
+        (e) => e.selector === selector || selector.includes(e.selector) || e.selector.includes(selector)
+      );
+      if (el?.rect) {
+        bounds = el.rect;
+      }
+    }
+
+    if (inspectionResult.critique) {
+      const c = inspectionResult.critique;
+      if (Array.isArray(c.contrastIssues)) {
+        for (const ci of c.contrastIssues) {
+          if (!ci.passesAA && (!selector || ci.selector?.includes(selector) || selector.includes(ci.selector))) {
+            issues.push(`Contrast failure on ${ci.selector}: ratio ${ci.contrastRatio}:1 (needed ${ci.requiredRatio}:1)`);
+          }
+        }
+      }
+      if (Array.isArray(c.spacingIssues)) {
+        for (const si of c.spacingIssues) {
+          if (!selector || si.selector?.includes(selector) || selector.includes(si.selector)) {
+            issues.push(`Off-grid spacing on ${si.selector} (${si.property}: ${si.value})`);
+          }
+        }
+      }
+      if (Array.isArray(c.touchTargetIssues)) {
+        for (const ti of c.touchTargetIssues) {
+          if (!selector || ti.selector?.includes(selector) || selector.includes(ti.selector)) {
+            issues.push(`Touch target too small on ${ti.selector} (${ti.width}x${ti.height}px < 44x44px)`);
+          }
+        }
+      }
+    }
+  }
+
+  // 3. Compute impact for primary candidate
+  const primary = correlation.sourceCandidates[0];
+  let impactInfo: {
+    riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+    affectedRoutes: string[];
+    directDependents: string[];
+  } = {
+    riskLevel: 'LOW',
+    affectedRoutes: correlation.matchedRoute ? [correlation.matchedRoute] : [],
+    directDependents: []
+  };
+
+  if (primary?.symbol) {
+    try {
+      const impact = getActiveIndex(repoIdentifier).traceImpact(primary.symbol);
+      impactInfo = {
+        riskLevel: impact.riskLevel,
+        affectedRoutes: impact.affectedRoutes,
+        directDependents: impact.directDependents
+      };
+    } catch {}
+  } else if (primary?.file) {
+    try {
+      const impact = getActiveIndex(repoIdentifier).traceImpact(primary.file);
+      impactInfo = {
+        riskLevel: impact.riskLevel,
+        affectedRoutes: impact.affectedRoutes,
+        directDependents: impact.directDependents
+      };
+    } catch {}
+  }
+
+  const targetName = selector || tag || textSnippet || 'target view';
+  const summary = `Compact Context for "${targetName}": maps to ${
+    primary
+      ? `${primary.file} (${primary.symbol}) with ${(primary.confidence * 100).toFixed(0)}% confidence`
+      : 'no direct candidate'
+  }. Blast radius: ${impactInfo.riskLevel} (${impactInfo.affectedRoutes.length} route(s), ${
+    impactInfo.directDependents.length
+  } direct dependent(s)).`;
+
+  return {
+    taskTarget: {
+      selector: correlation.selector,
+      tag: correlation.tag,
+      bounds,
+      issues: issues.length > 0 ? issues : undefined
+    },
+    sourceCandidates: correlation.sourceCandidates,
+    relatedFiles: correlation.relatedFiles,
+    impact: impactInfo,
+    summary
   };
 }

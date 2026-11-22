@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import type { CodeSymbol, RepoMetadata, RouteDefinition, SymbolKind } from '../types.js';
+import type { CodeSymbol, RepoMetadata, RouteDefinition, SymbolKind, ImpactAnalysisResult } from '../types.js';
 import type { ReExportDefinition } from './parser.js';
 
 export interface SearchMatch {
@@ -94,6 +94,14 @@ export class RepositoryIndexManager {
 
   public getTotalSymbols(): number {
     return this.symbols.length;
+  }
+
+  public getAllSymbols(): CodeSymbol[] {
+    return this.symbols;
+  }
+
+  public getImportsMap(): Map<string, string[]> {
+    return this.importsMap;
   }
 
   public search(query: string, kind?: SymbolKind, limit = 20): SearchMatch[] {
@@ -434,6 +442,170 @@ export class RepositoryIndexManager {
       callers,
       callees,
       connectedRoutes
+    };
+  }
+
+  public traceImpact(target: string): ImpactAnalysisResult {
+    const targetClean = target.trim();
+    const isFilePath =
+      targetClean.includes('/') ||
+      targetClean.includes('\\') ||
+      targetClean.endsWith('.ts') ||
+      targetClean.endsWith('.tsx') ||
+      targetClean.endsWith('.js') ||
+      targetClean.endsWith('.jsx') ||
+      targetClean.endsWith('.vue') ||
+      targetClean.endsWith('.svelte') ||
+      this.fileTree.includes(targetClean);
+
+    let kind: 'symbol' | 'file' = isFilePath ? 'file' : 'symbol';
+    let directDependents: string[] = [];
+    let callers: CallerInfo[] = [];
+    let callees: CalleeInfo[] = [];
+    const baseFiles = new Set<string>();
+
+    if (kind === 'file') {
+      const matchedFile =
+        this.fileTree.find((f) => f === targetClean || f.endsWith(targetClean)) || targetClean;
+      baseFiles.add(matchedFile);
+
+      for (const [importer, imports] of this.importsMap.entries()) {
+        if (importer === matchedFile) continue;
+        for (const imp of imports) {
+          const resolved = this.resolveImport(importer, imp);
+          if (
+            resolved === matchedFile ||
+            (resolved === null && imp.includes(path.basename(matchedFile, path.extname(matchedFile))))
+          ) {
+            directDependents.push(importer);
+            break;
+          }
+        }
+      }
+    } else {
+      const trace = this.traceSymbol(targetClean);
+      directDependents = trace.importedBy;
+      callers = trace.callers;
+      callees = trace.callees;
+      for (const def of trace.definitions) {
+        baseFiles.add(def.filePath);
+      }
+      if (baseFiles.size === 0) {
+        const fileCandidate = this.fileTree.find((f) =>
+          f.toLowerCase().includes(targetClean.toLowerCase())
+        );
+        if (fileCandidate) {
+          kind = 'file';
+          baseFiles.add(fileCandidate);
+          for (const [importer, imports] of this.importsMap.entries()) {
+            if (importer === fileCandidate) continue;
+            for (const imp of imports) {
+              const resolved = this.resolveImport(importer, imp);
+              if (resolved === fileCandidate) {
+                directDependents.push(importer);
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Transitive dependents calculation via BFS (depth <= 3)
+    const visited = new Set<string>([...baseFiles, ...directDependents]);
+    const transitiveSet = new Set<string>();
+    let queue: string[] = [...directDependents];
+    let depth = 1;
+
+    while (queue.length > 0 && depth <= 3) {
+      const nextQueue: string[] = [];
+      for (const currentFile of queue) {
+        for (const [importer, imports] of this.importsMap.entries()) {
+          if (visited.has(importer)) continue;
+          let importsCurrent = false;
+          for (const imp of imports) {
+            const resolved = this.resolveImport(importer, imp);
+            if (
+              resolved === currentFile ||
+              (resolved === null && imp.includes(path.basename(currentFile, path.extname(currentFile))))
+            ) {
+              importsCurrent = true;
+              break;
+            }
+          }
+          if (importsCurrent) {
+            visited.add(importer);
+            transitiveSet.add(importer);
+            nextQueue.push(importer);
+          }
+        }
+      }
+      queue = nextQueue;
+      depth++;
+    }
+
+    const transitiveDependents = Array.from(transitiveSet);
+
+    // Affected routes calculation
+    const allImpactedFiles = new Set<string>([
+      ...baseFiles,
+      ...directDependents,
+      ...transitiveDependents
+    ]);
+
+    const affectedRoutesSet = new Set<string>();
+    for (const r of this.routes) {
+      if (
+        allImpactedFiles.has(r.file) ||
+        (kind === 'symbol' && r.handler.toLowerCase().includes(targetClean.toLowerCase()))
+      ) {
+        affectedRoutesSet.add(`${r.method} ${r.path} (${r.file})`);
+      }
+    }
+    const affectedRoutes = Array.from(affectedRoutesSet);
+
+    // Risk scoring
+    const totalFiles = directDependents.length + transitiveDependents.length;
+    let riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+    if (affectedRoutes.length >= 4 || totalFiles >= 8) {
+      riskLevel = 'HIGH';
+    } else if (affectedRoutes.length >= 2 || totalFiles >= 3) {
+      riskLevel = 'MEDIUM';
+    } else {
+      riskLevel = 'LOW';
+    }
+
+    const recommendations: string[] = [];
+    if (riskLevel === 'HIGH') {
+      recommendations.push(
+        `High blast radius: modification affects ${totalFiles} downstream files and ${affectedRoutes.length} route(s). Verify changes before deploying.`
+      );
+    } else if (riskLevel === 'MEDIUM') {
+      recommendations.push(
+        `Moderate impact: ${totalFiles} file(s) and ${affectedRoutes.length} route(s) depend on this ${kind}.`
+      );
+    } else {
+      recommendations.push(
+        `Low blast radius: changes are isolated to local context.`
+      );
+    }
+    if (callers.length > 0) {
+      recommendations.push(`Direct call sites: ${callers.map((c) => c.name).join(', ')}.`);
+    }
+
+    const summary = `Impact Analysis for ${kind} "${targetClean}": ${riskLevel} risk. Affects ${directDependents.length} direct, ${transitiveDependents.length} transitive file(s), and ${affectedRoutes.length} route(s).`;
+
+    return {
+      target: targetClean,
+      kind,
+      directDependents,
+      transitiveDependents,
+      affectedRoutes,
+      callers,
+      callees,
+      riskLevel,
+      summary,
+      recommendations
     };
   }
 

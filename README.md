@@ -116,6 +116,8 @@ Prism adheres to both the **Model Context Protocol (MCP)** and the open **Agent 
 | `search_codebase` | `query`: string<br>`kind?`: `function\|class\|route...`<br>`limit?`: number | JSON (`CodeSymbol[]`) | Searches symbols and endpoints with AST relevance scoring |
 | `get_file` | `filePath`: string<br>`startLine?`: number<br>`endLine?`: number | Formatted text with line numbers | Retrieves exact lines with line number prefix (`42 \| code`) |
 | `trace_symbol` | `symbolName`: string | JSON (`SymbolTrace`) | Traces definitions, importers, re-exports, callers, and connected HTTP route handlers |
+| `trace_impact` | `target`: string<br>`repoIdentifier?`: string | JSON (`ImpactAnalysisResult`) | Computes direct and transitive blast radius (up to depth 3), affected routes, and risk score (LOW/MEDIUM/HIGH) |
+| `get_context` | `selector?`: string<br>`textSnippet?`: string<br>`tag?`: string<br>`urlOrRoute?`: string<br>`inspectionResult?`: object | JSON (`CompactTaskContext`) | Unified token-efficient context package combining element bounds, layout defects, source candidates, and blast radius |
 | `explain_architecture` | None | JSON (`ArchitectureSummary`) | Summarizes tech stack, key configs, entry points, and directory map |
 
 ---

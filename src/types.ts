@@ -232,3 +232,54 @@ export interface VerificationResult {
   summary: string;
 }
 
+export interface ImpactAnalysisResult {
+  target: string;
+  kind: 'symbol' | 'file';
+  directDependents: string[];
+  transitiveDependents: string[];
+  affectedRoutes: string[];
+  callers: Array<{
+    name: string;
+    kind: SymbolKind;
+    filePath: string;
+    startLine: number;
+  }>;
+  callees: Array<{
+    calledName: string;
+    targetDefinitions: Array<{
+      name: string;
+      filePath: string;
+      line: number;
+      kind: SymbolKind;
+    }>;
+  }>;
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+  summary: string;
+  recommendations: string[];
+}
+
+export interface CompactTaskContext {
+  taskTarget: {
+    selector: string;
+    tag?: string;
+    bounds?: { x: number; y: number; width: number; height: number };
+    issues?: string[];
+  };
+  sourceCandidates: Array<{
+    file: string;
+    symbol?: string;
+    startLine?: number;
+    endLine?: number;
+    confidence: number;
+    evidence: string[];
+  }>;
+  relatedFiles: string[];
+  impact: {
+    riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+    affectedRoutes: string[];
+    directDependents: string[];
+  };
+  summary: string;
+}
+
+

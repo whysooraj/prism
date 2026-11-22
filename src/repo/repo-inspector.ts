@@ -179,6 +179,14 @@ export function getActiveIndex(repoIdentifier?: string): RepositoryIndexManager 
   throw new Error('No repository has been indexed yet. Call index_repository first.');
 }
 
+export function traceImpact(target: string, repoIdentifier?: string) {
+  return getActiveIndex(repoIdentifier).traceImpact(target);
+}
+
+export function traceSymbol(symbolName: string, repoIdentifier?: string) {
+  return getActiveIndex(repoIdentifier).traceSymbol(symbolName);
+}
+
 export function listIndexedRepositories(): Array<{ name: string; branch: string; files: number; symbols: number }> {
   const seen = new Set<RepositoryIndexManager>();
   const list = [];

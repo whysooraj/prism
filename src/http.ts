@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { inspectWebsite } from './web/page-inspector.js';
 import { verifyChange } from './web/change-verifier.js';
 import { indexRepository, getActiveIndex } from './repo/repo-inspector.js';
-import { findUiSource } from './correlation/correlator.js';
+import { findUiSource, getContext } from './correlation/correlator.js';
 import { closeBrowser } from './web/browser.js';
 import type { SymbolKind, WebInspectionResult } from './types.js';
 
@@ -299,6 +299,31 @@ export function createHttpServer(): http.Server {
           repoIdentifier: body.repoIdentifier
         });
         return sendJson(res, 200, correlation);
+      }
+
+      // 9. POST /api/trace-impact (Blast Radius & Transitive Impact Analyzer)
+      if (req.method === 'POST' && pathname === '/api/trace-impact') {
+        const body = await parseBody(req);
+        if (!body.target) {
+          return sendJson(res, 400, { error: 'Field "target" (symbol name or file path) is required' });
+        }
+        const index = getActiveIndex(body.repoIdentifier);
+        const result = index.traceImpact(body.target);
+        return sendJson(res, 200, result);
+      }
+
+      // 10. POST /api/get-context (Unified Compact Task Context)
+      if (req.method === 'POST' && pathname === '/api/get-context') {
+        const body = await parseBody(req);
+        const result = getContext({
+          selector: body.selector,
+          textSnippet: body.textSnippet || body.text,
+          tag: body.tag,
+          urlOrRoute: body.urlOrRoute || body.url || body.route,
+          repoIdentifier: body.repoIdentifier,
+          inspectionResult: body.inspectionResult
+        });
+        return sendJson(res, 200, result);
       }
 
       return sendJson(res, 404, { error: `Endpoint not found: ${req.method} ${pathname}` });

@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { inspectWebsite, captureScreenshots } from './web/page-inspector.js';
 import { verifyChange } from './web/change-verifier.js';
 import { indexRepository, getActiveIndex } from './repo/repo-inspector.js';
-import { findUiSource } from './correlation/correlator.js';
+import { findUiSource, getContext } from './correlation/correlator.js';
 import type { SymbolKind, WebInspectionResult } from './types.js';
 
 export function createServer(): McpServer {
@@ -415,6 +415,72 @@ export function createServer(): McpServer {
         return {
           isError: true,
           content: [{ type: 'text', text: `Change verification error: ${err.message}` }]
+        };
+      }
+    }
+  );
+
+  // 10. Tool: trace_impact (Blast Radius & Transitive Impact Analyzer)
+  server.tool(
+    'trace_impact',
+    {
+      target: z.string().describe('Symbol name (e.g. Button) or file path (e.g. src/components/Sidebar.tsx) to analyze impact for'),
+      repoIdentifier: z.string().optional().describe('Optional repository name or path if multiple are indexed')
+    },
+    async ({ target, repoIdentifier }) => {
+      try {
+        const index = getActiveIndex(repoIdentifier);
+        const result = index.traceImpact(target);
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2)
+            }
+          ]
+        };
+      } catch (err: any) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Impact tracing error: ${err.message}` }]
+        };
+      }
+    }
+  );
+
+  // 11. Tool: get_context (Unified Compact Task Context for Coding Agents)
+  server.tool(
+    'get_context',
+    {
+      selector: z.string().optional().describe('DOM selector of the element of interest (e.g. "#sidebar" or "button.cta")'),
+      textSnippet: z.string().optional().describe('Visible text inside the element of interest'),
+      tag: z.string().optional().describe('HTML/JSX tag (e.g. "button", "aside")'),
+      urlOrRoute: z.string().optional().default('/').describe('Current application route or URL'),
+      repoIdentifier: z.string().optional().describe('Optional repository name or path'),
+      inspectionResult: z.any().optional().describe('Optional WebInspectionResult payload from inspect_website')
+    },
+    async ({ selector, textSnippet, tag, urlOrRoute, repoIdentifier, inspectionResult }) => {
+      try {
+        const result = getContext({
+          selector,
+          textSnippet,
+          tag,
+          urlOrRoute,
+          repoIdentifier,
+          inspectionResult
+        });
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2)
+            }
+          ]
+        };
+      } catch (err: any) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Get context error: ${err.message}` }]
         };
       }
     }

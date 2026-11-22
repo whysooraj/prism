@@ -360,6 +360,101 @@
           }
         }
       }
+    },
+    "/api/trace-impact": {
+      "post": {
+        "summary": "Calculate blast radius and transitive dependencies",
+        "operationId": "traceImpact",
+        "description": "Analyzes the impact of modifying a symbol or file: maps direct and transitive dependents (up to depth 3), affected routes, callers, and assigns a risk score (LOW, MEDIUM, HIGH).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "target": {
+                    "type": "string",
+                    "description": "Symbol name or file path to analyze."
+                  },
+                  "repoIdentifier": {
+                    "type": "string",
+                    "description": "Optional repository name or path."
+                  }
+                },
+                "required": ["target"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Impact analysis result including blast radius and risk level.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/get-context": {
+      "post": {
+        "summary": "Retrieve unified compact context package for a task",
+        "operationId": "getContext",
+        "description": "Returns a token-efficient compact context package connecting visible elements, layout defects, source candidates, and blast radius for AI coding agents.",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "selector": {
+                    "type": "string",
+                    "description": "DOM selector of interest."
+                  },
+                  "textSnippet": {
+                    "type": "string",
+                    "description": "Visible text inside the element."
+                  },
+                  "tag": {
+                    "type": "string",
+                    "description": "HTML or JSX tag name."
+                  },
+                  "urlOrRoute": {
+                    "type": "string",
+                    "description": "Current route or URL."
+                  },
+                  "repoIdentifier": {
+                    "type": "string",
+                    "description": "Optional repository identifier."
+                  },
+                  "inspectionResult": {
+                    "type": "object",
+                    "description": "Optional WebInspectionResult payload."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Compact task context package.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

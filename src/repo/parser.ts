@@ -234,6 +234,26 @@ function parseTypeScriptOrJavaScript(filePath: string, content: string): FilePar
         });
       }
 
+      // Check Next.js App Router page.tsx/page.jsx or Pages router pages/**/*.tsx
+      const isNextPage =
+        /(?:src\/)?pages\/.*?\.[jt]sx?$/.test(filePath) ||
+        /(?:src\/)?app\/.*?page\.[jt]sx?$/.test(filePath);
+      if (
+        isNextPage &&
+        (exported || node.modifiers?.some((m) => m.kind === ts.SyntaxKind.DefaultKeyword))
+      ) {
+        const routePath = deriveNextJsRoutePath(filePath);
+        if (!routes.some((r) => r.path === routePath)) {
+          routes.push({
+            method: 'GET',
+            path: routePath.startsWith('/') ? routePath : `/${routePath}`,
+            handler: name,
+            file: filePath,
+            line: startLine
+          });
+        }
+      }
+
       symbols.push({
         name,
         kind: 'function',
@@ -350,8 +370,23 @@ function parseTypeScriptOrJavaScript(filePath: string, content: string): FilePar
 }
 
 function deriveNextJsRoutePath(filePath: string): string {
-  const match = filePath.match(/(?:app|pages)(.*)\/route\.[jt]sx?$/);
-  return match ? match[1] : filePath;
+  // 1. App router route handler: app/**/route.ts
+  const routeMatch = filePath.match(/(?:app|pages)(.*)\/route\.[jt]sx?$/);
+  if (routeMatch) return routeMatch[1] || '/';
+
+  // 2. App router page component: app/**/page.tsx
+  const pageMatch = filePath.match(/(?:app)(.*)\/page\.[jt]sx?$/);
+  if (pageMatch) return pageMatch[1] || '/';
+
+  // 3. Pages router page component: pages/**/*.tsx
+  const pagesMatch = filePath.match(/(?:pages)(.*)\.[jt]sx?$/);
+  if (pagesMatch) {
+    let p = pagesMatch[1];
+    if (p.endsWith('/index')) p = p.slice(0, -6);
+    return (p || '/').toLowerCase();
+  }
+
+  return filePath;
 }
 
 const PYTHON_KEYWORDS = new Set([
