@@ -122,6 +122,11 @@ export async function createSafeContext(
     ignoreHTTPSErrors: true
   });
 
+  await context.addInitScript(() => {
+    (window as any).__name = (f: any) => f;
+    (globalThis as any).__name = (f: any) => f;
+  });
+
   if (!allowLocalhost) {
     await context.route('**/*', async (route) => {
       try {

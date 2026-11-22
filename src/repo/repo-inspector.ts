@@ -121,7 +121,7 @@ export async function indexRepository(
           // Limit 500KB per file to avoid memory bloat
           if (content.length < 500 * 1024) {
             const result = parseSourceFile(relPath, content);
-            manager.addFileResult(relPath, result.symbols, result.routes, result.imports);
+            manager.addFileResult(relPath, result.symbols, result.routes, result.imports, result.reExports);
           }
         } catch {
           // File parsing fallback

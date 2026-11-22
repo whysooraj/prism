@@ -54,6 +54,101 @@
         }
       }
     },
+    "/api/verify-change": {
+      "post": {
+        "summary": "Verify visual and design changes between two web page states",
+        "operationId": "verifyChange",
+        "description": "Compares before and after inspection payloads or URLs to verify resolved defects, regressions, unexpected layout shifts (>= 2px), and score deltas.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "beforeUrl": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "URL of the page before changes."
+                  },
+                  "afterUrl": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "URL of the page after changes."
+                  },
+                  "before": {
+                    "type": "object",
+                    "description": "Pre-inspected WebInspectionResult payload before changes."
+                  },
+                  "after": {
+                    "type": "object",
+                    "description": "Pre-inspected WebInspectionResult payload after changes."
+                  },
+                  "allowLocalhost": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Allow inspecting localhost or private IPs."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Automated visual verification result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "verdict": {
+                      "type": "string",
+                      "enum": ["PASSED", "REGRESSION", "PARTIAL_FIX"]
+                    },
+                    "scoreDelta": { "type": "number" },
+                    "beforeScore": { "type": "number" },
+                    "afterScore": { "type": "number" },
+                    "resolvedDefects": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "newRegressions": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "layoutShifts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "selector": { "type": "string" },
+                          "beforeRect": { "type": "object" },
+                          "afterRect": { "type": "object" },
+                          "deltaX": { "type": "number" },
+                          "deltaY": { "type": "number" }
+                        }
+                      }
+                    },
+                    "summary": { "type": "string" }
+                  },
+                  "required": [
+                    "verdict",
+                    "scoreDelta",
+                    "beforeScore",
+                    "afterScore",
+                    "resolvedDefects",
+                    "newRegressions",
+                    "layoutShifts",
+                    "summary"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/find-ui-source": {
       "post": {
         "summary": "Connect a rendered UI element to its source component",

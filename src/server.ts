@@ -1,9 +1,10 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { inspectWebsite, captureScreenshots } from './web/page-inspector.js';
+import { verifyChange } from './web/change-verifier.js';
 import { indexRepository, getActiveIndex } from './repo/repo-inspector.js';
 import { findUiSource } from './correlation/correlator.js';
-import type { SymbolKind } from './types.js';
+import type { SymbolKind, WebInspectionResult } from './types.js';
 
 export function createServer(): McpServer {
   const server = new McpServer({
@@ -240,6 +241,9 @@ export function createServer(): McpServer {
                     signature: d.signature
                   })),
                   importedByFiles: trace.importedBy,
+                  reExportedByFiles: trace.reExportedBy,
+                  callers: trace.callers,
+                  callees: trace.callees,
                   connectedRoutes: trace.connectedRoutes
                 },
                 null,
@@ -346,6 +350,71 @@ export function createServer(): McpServer {
         return {
           isError: true,
           content: [{ type: 'text', text: `UI source correlation error: ${err.message}` }]
+        };
+      }
+    }
+  );
+
+  // 9. Tool: verify_change (Automated Visual Change Verification)
+  server.tool(
+    'verify_change',
+    {
+      beforeUrl: z.string().url().optional().describe('URL of the web page before changes'),
+      afterUrl: z.string().url().optional().describe('URL of the web page after changes'),
+      before: z.any().optional().describe('WebInspectionResult object representing the before state'),
+      after: z.any().optional().describe('WebInspectionResult object representing the after state'),
+      allowLocalhost: z.boolean().default(false).describe('Allow inspecting localhost/private IPs'),
+      viewport: z
+        .object({
+          width: z.number().default(1440),
+          height: z.number().default(900)
+        })
+        .optional()
+        .describe('Viewport dimensions for inspection (desktop or mobile)')
+    },
+    async ({ beforeUrl, afterUrl, before, after, allowLocalhost, viewport }) => {
+      try {
+        if (!before && !beforeUrl) {
+          throw new Error('Either "before" inspection payload or "beforeUrl" must be provided');
+        }
+        if (!after && !afterUrl) {
+          throw new Error('Either "after" inspection payload or "afterUrl" must be provided');
+        }
+
+        const vp = viewport || { width: 1440, height: 900 };
+
+        let beforeResult: WebInspectionResult = before;
+        if (!beforeResult && beforeUrl) {
+          beforeResult = await inspectWebsite({
+            url: beforeUrl,
+            viewport: vp,
+            allowLocalhost
+          });
+        }
+
+        let afterResult: WebInspectionResult = after;
+        if (!afterResult && afterUrl) {
+          afterResult = await inspectWebsite({
+            url: afterUrl,
+            viewport: vp,
+            allowLocalhost
+          });
+        }
+
+        const result = verifyChange(beforeResult, afterResult);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2)
+            }
+          ]
+        };
+      } catch (err: any) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Change verification error: ${err.message}` }]
         };
       }
     }

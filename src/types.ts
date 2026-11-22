@@ -212,3 +212,23 @@ export interface RepoMetadata {
   configs: Record<string, any>;
   routes: RouteDefinition[];
 }
+
+export interface LayoutShift {
+  selector: string;
+  beforeRect: NodeRect;
+  afterRect: NodeRect;
+  deltaX: number;
+  deltaY: number;
+}
+
+export interface VerificationResult {
+  verdict: 'PASSED' | 'REGRESSION' | 'PARTIAL_FIX';
+  scoreDelta: number;
+  beforeScore: number;
+  afterScore: number;
+  resolvedDefects: string[];
+  newRegressions: string[];
+  layoutShifts: LayoutShift[];
+  summary: string;
+}
+

@@ -91,15 +91,15 @@ Prism adheres to both the **Model Context Protocol (MCP)** and the open **Agent 
                                │
                                ▼
                        [ PRISM ENGINE ]
-            ┌──────────────────┴──────────────────┐
-            ▼                                     ▼
-      [ Web Pipeline ]                    [ Repo Pipeline ]
-     • Playwright Chromium Engine        • Git Acquisition (--depth 1)
-     • Box Model & Layout Tree           • AST Compiler (TS/JS/Py/Go/Rs)
-     • Design Token Extractor            • Symbol Indexer & Call Graph
-     • WCAG Contrast Auditor             • Route & Middleware Analyzer
-     • Deterministic Wireframe SVG       • Surgical Line Slicer
-     • SSRF Safety Boundary              • In-Memory Index Cache
+            ┌──────────────────┼──────────────────┐
+            ▼                  ▼                  ▼
+      [ Web Pipeline ]    [ Correlation ]   [ Repo Pipeline ]
+     • Chromium Engine    • find_ui_source  • Git Acquisition
+     • Box Model & Trees  • verify_change   • AST Compiler
+     • Design Tokens      • Layout Diffs    • Symbol Indexer
+     • WCAG Contrast      • Regressions     • Route Analyzer
+     • 2D ASCII Radar     • Shift Scoring   • Surgical Slicer
+     • SSRF Boundary                        • Project Registry
 ```
 
 ---
@@ -110,10 +110,12 @@ Prism adheres to both the **Model Context Protocol (MCP)** and the open **Agent 
 |---|---|---|---|
 | `inspect_website` | `url`: string<br>`viewport?`: `{ width, height }`<br>`includeWireframeSvg?`: boolean<br>`includeA11y?`: boolean<br>`allowLocalhost?`: boolean | JSON (`WebInspectionResult`) | Extracts layout tree, box model, design tokens, WCAG contrast score, and wireframe SVG |
 | `capture_screenshots` | `url`: string<br>`allowLocalhost?`: boolean | PNG Base64 (Desktop & Mobile) | Captures dual viewports (1440x900 and 390x844) |
+| `find_ui_source` | `projectPath`: string<br>`selector?`: string<br>`tag?`: string<br>`textSnippet?`: string<br>`currentRoute?`: string | JSON (`FindUiSourceResult`) | Maps rendered DOM elements to likely JSX/TSX source components and lines with confidence scoring |
+| `verify_change` | `before`: `WebInspectionResult`<br>`after`: `WebInspectionResult`<br>`beforeUrl?`: string<br>`afterUrl?`: string | JSON (`ChangeVerificationResult`) | Compares before/after layout states, detects resolved defects, visual regressions, and layout shifts |
 | `index_repository` | `urlOrPath`: string<br>`branch?`: string<br>`authToken?`: string | JSON (`RepoIndexSummary`) | Fetches repo, extracts AST symbols, builds file tree and routes |
 | `search_codebase` | `query`: string<br>`kind?`: `function\|class\|route...`<br>`limit?`: number | JSON (`CodeSymbol[]`) | Searches symbols and endpoints with AST relevance scoring |
 | `get_file` | `filePath`: string<br>`startLine?`: number<br>`endLine?`: number | Formatted text with line numbers | Retrieves exact lines with line number prefix (`42 \| code`) |
-| `trace_symbol` | `symbolName`: string | JSON (`SymbolTrace`) | Traces definitions, importers, and connected HTTP route handlers |
+| `trace_symbol` | `symbolName`: string | JSON (`SymbolTrace`) | Traces definitions, importers, re-exports, callers, and connected HTTP route handlers |
 | `explain_architecture` | None | JSON (`ArchitectureSummary`) | Summarizes tech stack, key configs, entry points, and directory map |
 
 ---
@@ -192,12 +194,12 @@ Benchmarked via `benchmark/speed-benchmark.ts` on Node.js v25 with local headles
 
 | Operation | Latency | Prism Tokens | Vision / Full Dump | Token Savings |
 | :--- | :--- | :--- | :--- | :--- |
-| **SaaS Landing Page** | `1289ms` | 1053 | ~1400 (Screenshot VLM) | **25%** |
-| **Dense Enterprise Dash** | `1158ms` | 604 | ~1400 (Screenshot VLM) | **57%** |
-| **AST Repo Index (30 files / 538 symbols)** | `62.8ms` | 102 (Trace) | ~13,500 (Raw Text Dump) | **99%** |
+| **SaaS Landing Page** | `564ms` | 1053 | ~1400 (Screenshot VLM) | **25%** |
+| **Dense Enterprise Dash** | `403ms` | 604 | ~1400 (Screenshot VLM) | **57%** |
+| **AST Repo Index (35 files / 924 symbols)** | `120ms` | 102 (Trace) | ~15,750 (Raw Text Dump) | **99%** |
 
-- **Web Inspection**: ~1.1s - 1.2s end-to-end (DOM extraction, stacking context collisions, alpha layer composite, SVG wireframe, 2D ASCII radar).
-- **Repo Throughput**: ~475 files/sec via native TypeScript compiler AST.
+- **Web Inspection**: ~484ms end-to-end (stabilized via `document.fonts.ready` + animation frame quiet period, DOM extraction, stacking context collisions, alpha composite, 2D ASCII radar).
+- **Repo Throughput**: ~290 files/sec via native TypeScript compiler AST.
 - **Vision Comparison**: Standard 1440x900 screenshots consume ~1400-1600 tokens on GPT-4o and Claude 3.5. Prism outputs structured box models and 2D ASCII radar in 600-1000 tokens with exact pixel precision and zero OCR hallucinations.
 
 To run the speed benchmark:
@@ -218,6 +220,8 @@ npx tsx benchmark/speed-benchmark.ts
 | **Hierarchical Alpha Composite** | Yes (exact RGB math) | Visual estimate | No | Limited | N/A |
 | **Token Efficiency** | High (600-1000 tokens) | Low (1400-1600 tokens/shot) | High (text-only) | N/A | Very Low (100k+ tokens) |
 | **AST Symbol Call Graphs** | Yes (TS/JS/Py/Go/Rs) | No | No | No | No (raw text dump) |
+| **Visual-to-Source Correlation** | Yes (`find_ui_source`) | No | No | No | No |
+| **Visual Change Verification** | Yes (`verify_change`) | No | No | No | No |
 | **ChatGPT Action + MCP Native** | Yes (Dual HTTP & stdio) | Partial | Partial | No | No |
 
 ---

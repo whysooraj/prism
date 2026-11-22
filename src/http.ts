@@ -4,10 +4,11 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { inspectWebsite } from './web/page-inspector.js';
+import { verifyChange } from './web/change-verifier.js';
 import { indexRepository, getActiveIndex } from './repo/repo-inspector.js';
 import { findUiSource } from './correlation/correlator.js';
 import { closeBrowser } from './web/browser.js';
-import type { SymbolKind } from './types.js';
+import type { SymbolKind, WebInspectionResult } from './types.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OPENAPI_PATH = path.resolve(__dirname, '..', 'openapi.json');
@@ -109,6 +110,7 @@ export function createHttpServer(): http.Server {
           endpoints: [
             'GET /ui',
             'POST /api/inspect-website',
+            'POST /api/verify-change',
             'POST /api/find-ui-source',
             'POST /api/index-repo',
             'POST /api/search-codebase',
@@ -172,6 +174,47 @@ export function createHttpServer(): http.Server {
           asciiRadar: result.asciiRadar,
           wireframeSvg: result.wireframeSvg
         });
+      }
+
+      // 3.5. POST /api/verify-change
+      if (req.method === 'POST' && pathname === '/api/verify-change') {
+        const body = await parseBody(req);
+        if (!body.before && !body.beforeUrl) {
+          return sendJson(res, 400, { error: 'Missing required parameter: "before" or "beforeUrl"' });
+        }
+        if (!body.after && !body.afterUrl) {
+          return sendJson(res, 400, { error: 'Missing required parameter: "after" or "afterUrl"' });
+        }
+
+        const clientIp = req.socket.remoteAddress || '';
+        const isLocalCaller = clientIp === '127.0.0.1' || clientIp === '::1' || clientIp === '::ffff:127.0.0.1';
+        const allowLocal =
+          (body.allowLocalhost === true && (isLocalCaller || process.env.PRISM_ALLOW_LOCALHOST === '1')) ||
+          (typeof body.beforeUrl === 'string' && body.beforeUrl.startsWith('data:')) ||
+          (typeof body.afterUrl === 'string' && body.afterUrl.startsWith('data:'));
+
+        const vp = body.viewport || { width: 1440, height: 900 };
+
+        let beforeData: WebInspectionResult = body.before;
+        if (!beforeData && body.beforeUrl) {
+          beforeData = await inspectWebsite({
+            url: body.beforeUrl,
+            viewport: vp,
+            allowLocalhost: allowLocal
+          });
+        }
+
+        let afterData: WebInspectionResult = body.after;
+        if (!afterData && body.afterUrl) {
+          afterData = await inspectWebsite({
+            url: body.afterUrl,
+            viewport: vp,
+            allowLocalhost: allowLocal
+          });
+        }
+
+        const verification = verifyChange(beforeData, afterData);
+        return sendJson(res, 200, verification);
       }
 
       // 4. POST /api/index-repo
@@ -238,6 +281,9 @@ export function createHttpServer(): http.Server {
             signature: d.signature
           })),
           importedBy: trace.importedBy,
+          reExportedBy: trace.reExportedBy,
+          callers: trace.callers,
+          callees: trace.callees,
           connectedRoutes: trace.connectedRoutes
         });
       }

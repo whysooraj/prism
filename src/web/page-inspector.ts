@@ -22,6 +22,112 @@ export interface InspectOptions {
   includeA11y?: boolean;
 }
 
+export async function waitForBrowserStabilization(page: Page, maxWaitMs = 1200): Promise<void> {
+  const stabilizePromise = page
+    .evaluate((maxWait) => {
+      var __name = (globalThis as any).__name || ((fn: any) => fn);
+      return new Promise<void>((resolve) => {
+        let finished = false;
+        const hardTimer = setTimeout(() => {
+          if (!finished) {
+            finished = true;
+            resolve();
+          }
+        }, maxWait);
+
+        function done() {
+          if (!finished) {
+            finished = true;
+            clearTimeout(hardTimer);
+            resolve();
+          }
+        }
+
+        const fontPromise =
+          document.fonts && typeof (document.fonts as any).ready?.then === 'function'
+            ? Promise.race([
+                (document.fonts as any).ready.catch(() => {}),
+                new Promise((res) => setTimeout(res, 250))
+              ])
+            : Promise.resolve();
+
+        fontPromise.then(() => {
+          if (finished) return;
+
+          const QUIET_PERIOD_MS = 100;
+          const start = performance.now();
+          let lastShift = performance.now();
+
+          let observer: MutationObserver | null = null;
+          try {
+            observer = new MutationObserver(() => {
+              lastShift = performance.now();
+            });
+            if (document.body) {
+              observer.observe(document.body, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                characterData: true
+              });
+            }
+          } catch {}
+
+          function sampleRects(): number[] {
+            const rects: number[] = [];
+            const elements = document.querySelectorAll(
+              'body, header, nav, main, footer, section, article, h1, h2, button, a, input, [id]'
+            );
+            const len = Math.min(elements.length, 30);
+            for (let i = 0; i < len; i++) {
+              const r = elements[i].getBoundingClientRect();
+              rects.push(Math.round(r.x), Math.round(r.y), Math.round(r.width), Math.round(r.height));
+            }
+            return rects;
+          }
+
+          let prev = sampleRects();
+
+          const interval = setInterval(() => {
+            if (finished) {
+              clearInterval(interval);
+              if (observer) observer.disconnect();
+              return;
+            }
+            const now = performance.now();
+            const cur = sampleRects();
+            let shifted = cur.length !== prev.length;
+            if (!shifted) {
+              for (let i = 0; i < cur.length; i++) {
+                if (Math.abs(cur[i] - prev[i]) >= 1) {
+                  shifted = true;
+                  break;
+                }
+              }
+            }
+            prev = cur;
+            if (shifted) {
+              lastShift = now;
+            }
+
+            if (now - lastShift >= QUIET_PERIOD_MS || now - start >= maxWait) {
+              clearInterval(interval);
+              if (observer) observer.disconnect();
+              done();
+            }
+          }, 30);
+        });
+      });
+    }, maxWaitMs)
+    .catch(() => {});
+
+  // Hard timeout on Node side so Playwright page.evaluate can never stall
+  await Promise.race([
+    stabilizePromise,
+    new Promise((resolve) => setTimeout(resolve, maxWaitMs + 200))
+  ]);
+}
+
 export async function inspectWebsite(options: InspectOptions): Promise<WebInspectionResult> {
   const {
     url,
@@ -36,13 +142,14 @@ export async function inspectWebsite(options: InspectOptions): Promise<WebInspec
 
   try {
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    // Brief wait for layout stabilization / webfonts
-    await page.waitForTimeout(1000);
+    // Browser readiness stabilization: webfonts ready + settle layout shifts (no shifts for 150ms, max 1500ms fallback)
+    await waitForBrowserStabilization(page);
 
     const title = await page.title();
 
     // In-browser inspection script
     const inspectionData = await page.evaluate(() => {
+      var __name = (globalThis as any).__name || ((fn: any) => fn);
       function getSelector(el: Element): string {
         if (el.id) return `#${el.id}`;
         const className = el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\s+/).slice(0, 2).join('.') : '';
@@ -634,7 +741,7 @@ export async function captureScreenshots(options: {
   const desktopContext = await createSafeContext({ width: 1440, height: 900 }, allowLocalhost);
   const desktopPage = await desktopContext.newPage();
   await desktopPage.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await desktopPage.waitForTimeout(500);
+  await waitForBrowserStabilization(desktopPage);
   const desktopBuffer = await desktopPage.screenshot({ type: 'png', fullPage: false });
   await desktopPage.close();
   await desktopContext.close();
@@ -643,7 +750,7 @@ export async function captureScreenshots(options: {
   const mobileContext = await createSafeContext({ width: 390, height: 844 }, allowLocalhost);
   const mobilePage = await mobileContext.newPage();
   await mobilePage.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await mobilePage.waitForTimeout(500);
+  await waitForBrowserStabilization(mobilePage);
   const mobileBuffer = await mobilePage.screenshot({ type: 'png', fullPage: false });
   await mobilePage.close();
   await mobileContext.close();
