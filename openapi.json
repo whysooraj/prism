@@ -54,6 +54,53 @@
         }
       }
     },
+    "/api/find-ui-source": {
+      "post": {
+        "summary": "Connect a rendered UI element to its source component",
+        "operationId": "findUiSource",
+        "description": "Correlates a visible DOM selector, tag, text snippet, or route to matching source code components, file paths, line ranges, and related styles.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "urlOrRoute": {
+                    "type": "string",
+                    "description": "The URL or application route of the page (e.g. '/dashboard')."
+                  },
+                  "selector": {
+                    "type": "string",
+                    "description": "The CSS selector of the visible element (e.g. '[data-testid=\\'sidebar\\']' or 'button.btn-primary')."
+                  },
+                  "textSnippet": {
+                    "type": "string",
+                    "description": "Visible text snippet rendered inside the element (e.g. 'Deploy')."
+                  },
+                  "tag": {
+                    "type": "string",
+                    "description": "HTML tag of the element (e.g. 'button', 'nav')."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Source candidates with confidence scores and evidence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/index-repo": {
       "post": {
         "summary": "Index a GitHub repository",

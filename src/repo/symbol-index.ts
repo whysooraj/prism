@@ -161,15 +161,36 @@ export class RepositoryIndexManager {
     endLine: number;
     content: string;
   } {
-    const fullPath = path.isAbsolute(relativeFilePath)
-      ? relativeFilePath
-      : path.join(this.rootDir, relativeFilePath);
-
-    if (!fs.existsSync(fullPath)) {
-      throw new Error(`File not found: ${relativeFilePath}`);
+    // Reject absolute paths
+    if (path.isAbsolute(relativeFilePath)) {
+      throw new Error(`Access denied: path traversal outside repository containment: ${relativeFilePath}`);
     }
 
-    const raw = fs.readFileSync(fullPath, 'utf-8');
+    // Enforce strict containment within repository root to prevent path traversal
+    const normalizedRelative = path.normalize(relativeFilePath);
+    const resolvedPath = path.resolve(this.rootDir, normalizedRelative);
+    const relFromRoot = path.relative(this.rootDir, resolvedPath);
+
+    if (relFromRoot.startsWith('..') || path.isAbsolute(relFromRoot)) {
+      throw new Error(`Access denied: path traversal outside repository containment: ${relativeFilePath}`);
+    }
+
+    // Verify symlink containment to prevent symlink traversal
+    let realPath = resolvedPath;
+    try {
+      realPath = fs.realpathSync(resolvedPath);
+      const realRel = path.relative(this.rootDir, realPath);
+      if (realRel.startsWith('..') || path.isAbsolute(realRel)) {
+        throw new Error(`Access denied: symlink points outside repository: ${relativeFilePath}`);
+      }
+    } catch (err: any) {
+      if (err.code === 'ENOENT') {
+        throw new Error(`File not found: ${relativeFilePath}`);
+      }
+      throw err;
+    }
+
+    const raw = fs.readFileSync(realPath, 'utf-8');
     const lines = raw.split('\n');
     const totalLines = lines.length;
 
@@ -185,7 +206,7 @@ export class RepositoryIndexManager {
       .join('\n');
 
     return {
-      filePath: relativeFilePath,
+      filePath: relFromRoot,
       totalLines,
       startLine: start,
       endLine: end,

@@ -2,6 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { inspectWebsite, captureScreenshots } from './web/page-inspector.js';
 import { indexRepository, getActiveIndex } from './repo/repo-inspector.js';
+import { findUiSource } from './correlation/correlator.js';
 import type { SymbolKind } from './types.js';
 
 export function createServer(): McpServer {
@@ -297,6 +298,58 @@ export function createServer(): McpServer {
       };
     }
   });
+
+  // 8. Tool: find_ui_source (Visual-to-Code Correlation Engine)
+  server.tool(
+    'find_ui_source',
+    {
+      urlOrRoute: z
+        .string()
+        .optional()
+        .describe('URL or application route where the element is rendered (e.g. "/dashboard")'),
+      selector: z
+        .string()
+        .optional()
+        .describe('CSS selector of the target element (e.g. "[data-testid=\'sidebar\']" or "button.primary")'),
+      textSnippet: z
+        .string()
+        .optional()
+        .describe('Visible text snippet rendered inside the element (e.g. "Save Changes")'),
+      tag: z
+        .string()
+        .optional()
+        .describe('HTML tag of the element (e.g. "button", "nav", "aside")'),
+      repoIdentifier: z
+        .string()
+        .optional()
+        .describe('Optional repository name or path to query (defaults to active repo)')
+    },
+    async ({ urlOrRoute, selector, textSnippet, tag, repoIdentifier }) => {
+      try {
+        const correlation = findUiSource({
+          urlOrRoute,
+          selector,
+          textSnippet,
+          tag,
+          repoIdentifier
+        });
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(correlation, null, 2)
+            }
+          ]
+        };
+      } catch (err: any) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `UI source correlation error: ${err.message}` }]
+        };
+      }
+    }
+  );
 
   return server;
 }

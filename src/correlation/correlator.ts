@@ -1,0 +1,214 @@
+import * as fs from 'fs';
+import * as path from 'path';
+import { getActiveIndex } from '../repo/repo-inspector.js';
+import type { RouteDefinition } from '../types.js';
+
+export interface SourceCandidate {
+  file: string;
+  symbol?: string;
+  startLine?: number;
+  endLine?: number;
+  confidence: number;
+  evidence: string[];
+}
+
+export interface UiSourceCorrelationResult {
+  selector: string;
+  tag?: string;
+  textSnippet?: string;
+  matchedRoute?: string;
+  routeFile?: string;
+  sourceCandidates: SourceCandidate[];
+  relatedFiles: string[];
+}
+
+export interface FindUiSourceOptions {
+  urlOrRoute?: string;
+  selector?: string;
+  textSnippet?: string;
+  tag?: string;
+  repoIdentifier?: string;
+}
+
+export function findUiSource(options: FindUiSourceOptions): UiSourceCorrelationResult {
+  const {
+    urlOrRoute = '/',
+    selector = '',
+    textSnippet = '',
+    tag = '',
+    repoIdentifier
+  } = options;
+
+  const index = getActiveIndex(repoIdentifier);
+  const metadata = index.getMetadata();
+  const fileTree = index.getFileTree();
+  const routes = index.getRoutes();
+
+  // 1. Resolve pathname from URL
+  let pathname = urlOrRoute;
+  try {
+    if (urlOrRoute.startsWith('http://') || urlOrRoute.startsWith('https://')) {
+      const u = new URL(urlOrRoute);
+      pathname = u.pathname;
+    }
+  } catch {
+    pathname = urlOrRoute;
+  }
+  if (!pathname.startsWith('/')) {
+    pathname = `/${pathname}`;
+  }
+
+  // 2. Route candidate match
+  let matchedRoute: RouteDefinition | undefined = undefined;
+  for (const r of routes) {
+    if (r.path === pathname || (pathname !== '/' && r.path.endsWith(pathname))) {
+      matchedRoute = r;
+      break;
+    }
+  }
+
+  // Also check file-based routing conventions (Next.js App / Pages router)
+  let routeFile = matchedRoute?.file;
+  if (!routeFile) {
+    const cleanRoute = pathname === '/' ? 'index' : pathname.replace(/^\/+/, '');
+    const routeCandidates = [
+      `src/app/${cleanRoute}/page.tsx`,
+      `src/app/${cleanRoute}/page.jsx`,
+      `app/${cleanRoute}/page.tsx`,
+      `app/${cleanRoute}/page.jsx`,
+      `src/pages/${cleanRoute}.tsx`,
+      `src/pages/${cleanRoute}.jsx`,
+      `pages/${cleanRoute}.tsx`,
+      `pages/${cleanRoute}.jsx`,
+      `src/pages/${cleanRoute}/index.tsx`,
+      `pages/${cleanRoute}/index.tsx`
+    ];
+    for (const c of routeCandidates) {
+      if (fileTree.includes(c)) {
+        routeFile = c;
+        break;
+      }
+    }
+  }
+
+  // 3. Extract tokens from selector
+  // e.g. "button.login-btn#auth-action" -> id: "auth-action", classes: ["login-btn"], tag: "button"
+  const cleanSelector = selector.trim();
+  const idMatch = cleanSelector.match(/#([a-zA-Z0-9_-]+)/);
+  const targetId = idMatch ? idMatch[1] : null;
+
+  const classMatches = Array.from(cleanSelector.matchAll(/\.([a-zA-Z0-9_-]+)/g)).map((m) => m[1]);
+  const testIdMatch = cleanSelector.match(/\[data-testid=['"]?([a-zA-Z0-9_-]+)['"]?\]/);
+  const targetTestId = testIdMatch ? testIdMatch[1] : null;
+
+  // 4. Score component files in repository
+  const candidates: SourceCandidate[] = [];
+  const relatedFiles = new Set<string>();
+
+  const componentFiles = fileTree.filter((f) => {
+    const ext = path.extname(f).toLowerCase();
+    return ['.tsx', '.jsx', '.vue', '.svelte', '.html'].includes(ext);
+  });
+
+  const rootDir = (index as any).rootDir || process.cwd();
+
+  for (const relPath of componentFiles) {
+    const fullPath = path.resolve(rootDir, relPath);
+    let content = '';
+    try {
+      content = fs.readFileSync(fullPath, 'utf-8');
+    } catch {
+      continue;
+    }
+
+    const lines = content.split('\n');
+    const evidence: string[] = [];
+    let score = 0;
+    let hitLine: number | undefined = undefined;
+
+    // Check data-testid
+    if (targetTestId && content.includes(targetTestId)) {
+      score += 0.5;
+      evidence.push(`Direct matching data-testid="${targetTestId}"`);
+      const l = lines.findIndex((ln) => ln.includes(targetTestId));
+      if (l >= 0 && !hitLine) hitLine = l + 1;
+    }
+
+    // Check id
+    if (targetId && content.includes(targetId)) {
+      score += 0.4;
+      evidence.push(`Direct matching id="${targetId}"`);
+      const l = lines.findIndex((ln) => ln.includes(targetId));
+      if (l >= 0 && !hitLine) hitLine = l + 1;
+    }
+
+    // Check class names
+    for (const cls of classMatches) {
+      if (content.includes(cls)) {
+        score += 0.25;
+        evidence.push(`Matching class/token "${cls}"`);
+        const l = lines.findIndex((ln) => ln.includes(cls));
+        if (l >= 0 && !hitLine) hitLine = l + 1;
+      }
+    }
+
+    // Check text snippet
+    if (textSnippet && textSnippet.length >= 3 && content.includes(textSnippet)) {
+      score += 0.35;
+      evidence.push(`Text content occurrence: "${textSnippet}"`);
+      const l = lines.findIndex((ln) => ln.includes(textSnippet));
+      if (l >= 0 && !hitLine) hitLine = l + 1;
+    }
+
+    // Check tag match if selector is specific
+    if (tag && content.toLowerCase().includes(`<${tag.toLowerCase()}`)) {
+      score += 0.1;
+      evidence.push(`Rendered JSX/HTML tag <${tag}>`);
+    }
+
+    // Route connection bonus
+    if (routeFile && relPath === routeFile) {
+      score += 0.3;
+      evidence.push(`Entry component for current route (${pathname})`);
+    }
+
+    // Related styles
+    const baseName = path.basename(relPath, path.extname(relPath));
+    const potentialCss = [
+      path.join(path.dirname(relPath), `${baseName}.css`),
+      path.join(path.dirname(relPath), `${baseName}.module.css`),
+      path.join(path.dirname(relPath), `${baseName}.scss`),
+      path.join(path.dirname(relPath), `${baseName}.module.scss`)
+    ];
+    for (const css of potentialCss) {
+      if (fileTree.includes(css)) {
+        relatedFiles.add(css);
+      }
+    }
+
+    if (score > 0) {
+      const confidence = Math.min(0.99, Math.round(score * 100) / 100);
+      candidates.push({
+        file: relPath,
+        symbol: baseName,
+        startLine: hitLine ? Math.max(1, hitLine - 2) : 1,
+        endLine: hitLine ? hitLine + 15 : undefined,
+        confidence,
+        evidence
+      });
+    }
+  }
+
+  // Sort candidates by descending confidence
+  candidates.sort((a, b) => b.confidence - a.confidence);
+
+  return {
+    selector: cleanSelector,
+    tag: tag || undefined,
+    textSnippet: textSnippet || undefined,
+    matchedRoute: matchedRoute?.path || pathname,
+    routeFile,
+    sourceCandidates: candidates.slice(0, 5),
+    relatedFiles: Array.from(relatedFiles).slice(0, 5)
+  };
+}

@@ -1,5 +1,6 @@
 import { chromium, type Browser, type BrowserContext } from 'playwright-core';
 import * as fs from 'fs';
+import * as dns from 'dns';
 
 const CHROME_PATHS = [
   '/usr/bin/google-chrome-stable',
@@ -43,20 +44,11 @@ export async function getBrowser(): Promise<Browser> {
   return sharedBrowser;
 }
 
-export function isPrivateIpOrHost(hostname: string): boolean {
-  const cleanHost = hostname.replace(/^\[|\]$/g, '').toLowerCase();
-
-  if (
-    cleanHost === 'localhost' ||
-    cleanHost.endsWith('.localhost') ||
-    cleanHost.endsWith('.local') ||
-    cleanHost.endsWith('.internal')
-  ) {
-    return true;
-  }
+export function isPrivateIp(ip: string): boolean {
+  const cleanIp = ip.replace(/^::ffff:/i, '').trim();
 
   // IPv4 checks
-  const ipv4Match = cleanHost.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  const ipv4Match = cleanIp.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
   if (ipv4Match) {
     const octets = ipv4Match.slice(1).map(Number);
     if (octets[0] === 127) return true; // Loopback 127.0.0.0/8
@@ -67,12 +59,55 @@ export function isPrivateIpOrHost(hostname: string): boolean {
     if (octets[0] === 0) return true; // 0.0.0.0
   }
 
-  // IPv6 loopback / unique local
-  if (cleanHost === '::1' || cleanHost.startsWith('fc00:') || cleanHost.startsWith('fe80:')) {
+  // Decimal / hex integer notation e.g. 2130706433 or 0x7f000001
+  if (/^(?:0x[0-9a-f]+|\d+)$/i.test(cleanIp)) {
+    return true;
+  }
+
+  // IPv6 loopback / unique local / link local
+  if (cleanIp === '::1' || cleanIp.startsWith('fc00:') || cleanIp.startsWith('fe80:') || cleanIp.startsWith('fd00:')) {
     return true;
   }
 
   return false;
+}
+
+export function isPrivateIpOrHost(hostname: string): boolean {
+  const cleanHost = hostname.replace(/^\[|\]$/g, '').toLowerCase().trim();
+
+  if (
+    cleanHost === 'localhost' ||
+    cleanHost.endsWith('.localhost') ||
+    cleanHost.endsWith('.local') ||
+    cleanHost.endsWith('.internal') ||
+    cleanHost.endsWith('.lan') ||
+    cleanHost === '127.0.0.1' ||
+    cleanHost === '::1'
+  ) {
+    return true;
+  }
+
+  if (isPrivateIp(cleanHost)) {
+    return true;
+  }
+
+  return false;
+}
+
+export async function isSafeDestination(hostname: string): Promise<boolean> {
+  if (isPrivateIpOrHost(hostname)) return false;
+
+  try {
+    const res = await dns.promises.lookup(hostname, { all: true });
+    for (const entry of res) {
+      if (isPrivateIp(entry.address)) {
+        return false;
+      }
+    }
+    return true;
+  } catch {
+    return true;
+  }
 }
 
 export async function createSafeContext(
@@ -88,10 +123,14 @@ export async function createSafeContext(
   });
 
   if (!allowLocalhost) {
-    await context.route('**/*', (route) => {
+    await context.route('**/*', async (route) => {
       try {
         const url = new URL(route.request().url());
-        if (isPrivateIpOrHost(url.hostname)) {
+        if (url.protocol === 'data:' || url.protocol === 'about:') {
+          return route.continue();
+        }
+        const safe = await isSafeDestination(url.hostname);
+        if (!safe) {
           return route.abort('blockedbyclient');
         }
         return route.continue();

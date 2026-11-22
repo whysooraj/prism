@@ -28,7 +28,13 @@ const IGNORED_EXTENSIONS = new Set([
   '.map'
 ]);
 
-let activeRepoIndex: RepositoryIndexManager | null = null;
+const repoRegistry: Map<string, RepositoryIndexManager> = new Map();
+let lastActiveKey: string | null = null;
+const MAX_REGISTRY_ENTRIES = 12;
+
+export function getRepoKey(repoNameOrPath: string, branch = 'main'): string {
+  return `${repoNameOrPath.trim().toLowerCase()}::${branch.trim().toLowerCase()}`;
+}
 
 export async function indexRepository(
   urlOrPath: string,
@@ -127,7 +133,18 @@ export async function indexRepository(
   scanDir(acq.localPath);
 
   manager.finalizeMetadata(configs, languages, entryPoints);
-  activeRepoIndex = manager;
+
+  const key = getRepoKey(acq.repoName, acq.branch);
+  const pathKey = getRepoKey(acq.localPath, acq.branch);
+
+  if (repoRegistry.size >= MAX_REGISTRY_ENTRIES && !repoRegistry.has(key)) {
+    const firstKey = repoRegistry.keys().next().value;
+    if (firstKey) repoRegistry.delete(firstKey);
+  }
+
+  repoRegistry.set(key, manager);
+  repoRegistry.set(pathKey, manager);
+  lastActiveKey = key;
 
   return {
     repoName: acq.repoName,
@@ -142,9 +159,39 @@ export async function indexRepository(
   };
 }
 
-export function getActiveIndex(): RepositoryIndexManager {
-  if (!activeRepoIndex) {
-    throw new Error('No repository has been indexed yet. Call index_repository first.');
+export function getActiveIndex(repoIdentifier?: string): RepositoryIndexManager {
+  if (repoIdentifier) {
+    const direct = repoRegistry.get(repoIdentifier.toLowerCase());
+    if (direct) return direct;
+    for (const [k, v] of repoRegistry.entries()) {
+      if (k.includes(repoIdentifier.toLowerCase())) return v;
+    }
   }
-  return activeRepoIndex;
+
+  if (lastActiveKey && repoRegistry.has(lastActiveKey)) {
+    return repoRegistry.get(lastActiveKey)!;
+  }
+
+  if (repoRegistry.size > 0) {
+    return repoRegistry.values().next().value!;
+  }
+
+  throw new Error('No repository has been indexed yet. Call index_repository first.');
+}
+
+export function listIndexedRepositories(): Array<{ name: string; branch: string; files: number; symbols: number }> {
+  const seen = new Set<RepositoryIndexManager>();
+  const list = [];
+  for (const manager of repoRegistry.values()) {
+    if (seen.has(manager)) continue;
+    seen.add(manager);
+    const meta = manager.getMetadata();
+    list.push({
+      name: meta.name,
+      branch: meta.branch,
+      files: meta.totalFiles,
+      symbols: manager.getTotalSymbols()
+    });
+  }
+  return list;
 }

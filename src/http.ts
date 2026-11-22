@@ -5,6 +5,7 @@ import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { inspectWebsite } from './web/page-inspector.js';
 import { indexRepository, getActiveIndex } from './repo/repo-inspector.js';
+import { findUiSource } from './correlation/correlator.js';
 import { closeBrowser } from './web/browser.js';
 import type { SymbolKind } from './types.js';
 
@@ -108,6 +109,7 @@ export function createHttpServer(): http.Server {
           endpoints: [
             'GET /ui',
             'POST /api/inspect-website',
+            'POST /api/find-ui-source',
             'POST /api/index-repo',
             'POST /api/search-codebase',
             'POST /api/get-file',
@@ -148,11 +150,15 @@ export function createHttpServer(): http.Server {
           return sendJson(res, 400, { error: 'Missing required parameter: "url"' });
         }
 
+        const clientIp = req.socket.remoteAddress || '';
+        const isLocalCaller = clientIp === '127.0.0.1' || clientIp === '::1' || clientIp === '::ffff:127.0.0.1';
+        const allowLocal = (body.allowLocalhost === true && (isLocalCaller || process.env.PRISM_ALLOW_LOCALHOST === '1')) || body.url.startsWith('data:');
+
         const result = await inspectWebsite({
           url: body.url,
           viewport: body.viewport || { width: 1440, height: 900 },
           includeWireframeSvg: body.includeWireframeSvg !== false,
-          allowLocalhost: body.allowLocalhost === true
+          allowLocalhost: allowLocal
         });
 
         return sendJson(res, 200, {
@@ -234,6 +240,19 @@ export function createHttpServer(): http.Server {
           importedBy: trace.importedBy,
           connectedRoutes: trace.connectedRoutes
         });
+      }
+
+      // 8. POST /api/find-ui-source (Visual-to-Code Correlation)
+      if (req.method === 'POST' && pathname === '/api/find-ui-source') {
+        const body = await parseBody(req);
+        const correlation = findUiSource({
+          urlOrRoute: body.url || body.route || body.urlOrRoute,
+          selector: body.selector,
+          textSnippet: body.textSnippet || body.text,
+          tag: body.tag,
+          repoIdentifier: body.repoIdentifier
+        });
+        return sendJson(res, 200, correlation);
       }
 
       return sendJson(res, 404, { error: `Endpoint not found: ${req.method} ${pathname}` });
