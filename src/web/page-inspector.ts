@@ -3,7 +3,7 @@ import { createSafeContext } from './browser.js';
 import { generateWireframeSvg } from './layout.js';
 import { generateAsciiRadar } from './ascii-radar.js';
 import { auditDesign, calculateContrastRatio, parseRgb } from './design-audit.js';
-import { getActiveSession } from '../repo/session-manager.js';
+import { getSession, getActiveSession } from '../repo/session-manager.js';
 import type {
   ContrastIssue,
   DesignPalette,
@@ -806,6 +806,7 @@ export async function captureScreenshots(options: {
 }
 
 export interface InspectPageOptions {
+  sessionId?: string;
   url?: string;
   viewport?: { width: number; height: number };
   compact?: boolean;
@@ -814,27 +815,32 @@ export interface InspectPageOptions {
 }
 
 export async function inspectPage(options: InspectPageOptions = {}): Promise<any> {
-  const activeSession = getActiveSession();
-  const targetUrl = options.url || activeSession?.appUrl;
+  let targetUrl = options.url;
+
+  if (options.sessionId) {
+    const session = getSession(options.sessionId);
+    if (!targetUrl && session.appUrl) {
+      targetUrl = session.appUrl;
+    }
+  } else if (!targetUrl) {
+    const active = getActiveSession();
+    if (active && active.appUrl) {
+      targetUrl = active.appUrl;
+    }
+  }
 
   if (!targetUrl) {
     throw new Error(
-      'No URL provided and no active project session has an appUrl configured. Call connect_project or pass "url".'
+      'No target URL resolved. Pass "url" directly or pass "sessionId" of a connected project that has an appUrl.'
     );
   }
-
-  const isLocal =
-    targetUrl.includes('localhost') ||
-    targetUrl.includes('127.0.0.1') ||
-    targetUrl.startsWith('data:') ||
-    Boolean(options.allowLocalhost);
 
   const result = await inspectWebsite({
     url: targetUrl,
     viewport: options.viewport || { width: 1440, height: 900 },
     includeWireframeSvg: !options.compact,
     includeA11y: options.includeA11y || false,
-    allowLocalhost: isLocal
+    allowLocalhost: Boolean(options.allowLocalhost)
   });
 
   if (options.compact) {

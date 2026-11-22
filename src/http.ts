@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { inspectWebsite, inspectPage } from './web/page-inspector.js';
 import { verifyChange } from './web/change-verifier.js';
 import { indexRepository, getActiveIndex } from './repo/repo-inspector.js';
-import { connectProject } from './repo/session-manager.js';
+import { connectProject, resolveSessionRepo } from './repo/session-manager.js';
 import { findUiSource, getContext } from './correlation/correlator.js';
 import { closeBrowser } from './web/browser.js';
 import type { SymbolKind, WebInspectionResult } from './types.js';
@@ -31,13 +31,89 @@ function getUiHtml(): string | null {
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 
+// Rate limiter: rolling 60-second window per IP
+const rateLimits = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = 60;
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimits.get(ip);
+  if (!entry || now > entry.resetAt) {
+    rateLimits.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= RATE_LIMIT_MAX) {
+    return false;
+  }
+  entry.count++;
+  return true;
+}
+
+function getCorsHeaders(req: http.IncomingMessage): Record<string, string> {
+  const origin = req.headers.origin || '';
+  const allowAll = process.env.PRISM_ALLOW_ALL_ORIGINS === '1';
+  const allowedList = process.env.PRISM_ALLOWED_ORIGINS
+    ? process.env.PRISM_ALLOWED_ORIGINS.split(',').map((s) => s.trim().toLowerCase())
+    : null;
+
+  let matchedOrigin = '';
+  if (allowAll) {
+    matchedOrigin = '*';
+  } else if (allowedList && origin) {
+    if (allowedList.includes(origin.toLowerCase())) {
+      matchedOrigin = origin;
+    }
+  } else if (origin) {
+    // Default safe local origins
+    const isLocalOrigin =
+      origin.startsWith('http://localhost:') ||
+      origin.startsWith('http://127.0.0.1:') ||
+      origin.startsWith('https://localhost:') ||
+      origin.startsWith('https://127.0.0.1:');
+    if (isLocalOrigin) {
+      matchedOrigin = origin;
+    }
+  }
+
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-api-key'
+  };
+  if (matchedOrigin) {
+    headers['Access-Control-Allow-Origin'] = matchedOrigin;
+  }
+  return headers;
+}
+
+function validateAuth(req: http.IncomingMessage): boolean {
+  const apiKey = process.env.PRISM_API_KEY;
+  if (!apiKey) {
+    // If no API key configured, default to allowing local requests
+    return true;
+  }
+
+  const authHeader = req.headers['authorization'];
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.slice(7).trim();
+    if (token === apiKey) return true;
+  }
+
+  const customKey = req.headers['x-api-key'];
+  if (typeof customKey === 'string' && customKey.trim() === apiKey) {
+    return true;
+  }
+
+  return false;
+}
+
 function sendJson(res: http.ServerResponse, statusCode: number, data: any) {
+  const req: http.IncomingMessage | undefined = (res as any).__req;
   const body = JSON.stringify(data, null, 2);
+  const cors = req ? getCorsHeaders(req) : {};
   res.writeHead(statusCode, {
     'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+    ...cors
   });
   res.end(body);
 }
@@ -66,18 +142,30 @@ function parseBody(req: http.IncomingMessage): Promise<any> {
 
 export function createHttpServer(): http.Server {
   const server = http.createServer(async (req, res) => {
+    (res as any).__req = req;
+
     // Handle CORS preflight
     if (req.method === 'OPTIONS') {
-      res.writeHead(204, {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-      });
+      const cors = getCorsHeaders(req);
+      res.writeHead(204, cors);
       return res.end();
     }
 
     const parsedUrl = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
     const pathname = parsedUrl.pathname;
+
+    // Rate limiter check
+    const clientIp = req.socket.remoteAddress || 'unknown';
+    if (!checkRateLimit(clientIp)) {
+      return sendJson(res, 429, { error: 'Rate limit exceeded (maximum 60 requests per minute)' });
+    }
+
+    // Authentication check for API endpoints (excluding health and metadata endpoints)
+    if (pathname.startsWith('/api/') && pathname !== '/api/health') {
+      if (!validateAuth(req)) {
+        return sendJson(res, 401, { error: 'Unauthorized: Invalid or missing PRISM_API_KEY' });
+      }
+    }
 
     try {
       // 0. Serve Interactive Web Inspector Playground UI
@@ -293,6 +381,7 @@ export function createHttpServer(): http.Server {
       if (req.method === 'POST' && pathname === '/api/find-ui-source') {
         const body = await parseBody(req);
         const correlation = findUiSource({
+          sessionId: body.sessionId,
           urlOrRoute: body.url || body.route || body.urlOrRoute,
           selector: body.selector,
           textSnippet: body.textSnippet || body.text,
@@ -308,7 +397,9 @@ export function createHttpServer(): http.Server {
         if (!body.target) {
           return sendJson(res, 400, { error: 'Field "target" (symbol name or file path) is required' });
         }
-        const index = getActiveIndex(body.repoIdentifier);
+        const index = body.sessionId
+          ? resolveSessionRepo(body.sessionId).repoIndex
+          : getActiveIndex(body.repoIdentifier);
         const result = index.traceImpact(body.target);
         return sendJson(res, 200, result);
       }
@@ -317,6 +408,7 @@ export function createHttpServer(): http.Server {
       if (req.method === 'POST' && pathname === '/api/get-context') {
         const body = await parseBody(req);
         const result = getContext({
+          sessionId: body.sessionId,
           selector: body.selector,
           textSnippet: body.textSnippet || body.text,
           tag: body.tag,
@@ -345,12 +437,19 @@ export function createHttpServer(): http.Server {
       // 12. POST /api/inspect-page (Context-aware browser inspection)
       if (req.method === 'POST' && pathname === '/api/inspect-page') {
         const body = await parseBody(req);
+        const clientIp = req.socket.remoteAddress || '';
+        const isLocalCaller = clientIp === '127.0.0.1' || clientIp === '::1' || clientIp === '::ffff:127.0.0.1';
+        const allowLocal =
+          (body.allowLocalhost === true && (isLocalCaller || process.env.PRISM_ALLOW_LOCALHOST === '1')) ||
+          (typeof body.url === 'string' && body.url.startsWith('data:'));
+
         const result = await inspectPage({
+          sessionId: body.sessionId,
           url: body.url,
           compact: body.compact !== false,
           viewport: body.viewport,
           includeA11y: body.includeA11y,
-          allowLocalhost: body.allowLocalhost ?? true
+          allowLocalhost: allowLocal
         });
         return sendJson(res, 200, result);
       }

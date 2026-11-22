@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { getActiveIndex } from '../repo/repo-inspector.js';
+import { resolveSessionRepo } from '../repo/session-manager.js';
 import type { RouteDefinition, CompactTaskContext, WebInspectionResult } from '../types.js';
 
 export interface SourceCandidate {
@@ -23,6 +24,7 @@ export interface UiSourceCorrelationResult {
 }
 
 export interface FindUiSourceOptions {
+  sessionId?: string;
   urlOrRoute?: string;
   selector?: string;
   textSnippet?: string;
@@ -33,6 +35,7 @@ export interface FindUiSourceOptions {
 
 export function findUiSource(options: FindUiSourceOptions): UiSourceCorrelationResult {
   const {
+    sessionId,
     urlOrRoute = '/',
     selector = '',
     textSnippet = '',
@@ -41,7 +44,9 @@ export function findUiSource(options: FindUiSourceOptions): UiSourceCorrelationR
     repoIdentifier
   } = options;
 
-  const index = getActiveIndex(repoIdentifier);
+  const index = sessionId
+    ? resolveSessionRepo(sessionId).repoIndex
+    : getActiveIndex(repoIdentifier);
   const metadata = index.getMetadata();
   const fileTree = index.getFileTree();
   const routes = index.getRoutes();
@@ -252,6 +257,7 @@ export function findUiSource(options: FindUiSourceOptions): UiSourceCorrelationR
 }
 
 export interface GetContextOptions {
+  sessionId?: string;
   repoIdentifier?: string;
   urlOrRoute?: string;
   selector?: string;
@@ -262,6 +268,7 @@ export interface GetContextOptions {
 
 export function getContext(options: GetContextOptions): CompactTaskContext {
   const {
+    sessionId,
     repoIdentifier,
     urlOrRoute = '/',
     selector = '',
@@ -315,6 +322,7 @@ export function getContext(options: GetContextOptions): CompactTaskContext {
 
   // Correlate element to source candidates
   const correlation = findUiSource({
+    sessionId,
     repoIdentifier,
     urlOrRoute,
     selector,
@@ -322,6 +330,10 @@ export function getContext(options: GetContextOptions): CompactTaskContext {
     tag,
     componentName: detectedComponentName
   });
+
+  const index = sessionId
+    ? resolveSessionRepo(sessionId).repoIndex
+    : getActiveIndex(repoIdentifier);
 
   // 3. Compute impact for primary candidate
   const primary = correlation.sourceCandidates[0];
@@ -337,7 +349,7 @@ export function getContext(options: GetContextOptions): CompactTaskContext {
 
   if (primary?.symbol) {
     try {
-      const impact = getActiveIndex(repoIdentifier).traceImpact(primary.symbol);
+      const impact = index.traceImpact(primary.symbol);
       impactInfo = {
         riskLevel: impact.riskLevel,
         affectedRoutes: impact.affectedRoutes,
@@ -346,7 +358,7 @@ export function getContext(options: GetContextOptions): CompactTaskContext {
     } catch {}
   } else if (primary?.file) {
     try {
-      const impact = getActiveIndex(repoIdentifier).traceImpact(primary.file);
+      const impact = index.traceImpact(primary.file);
       impactInfo = {
         riskLevel: impact.riskLevel,
         affectedRoutes: impact.affectedRoutes,

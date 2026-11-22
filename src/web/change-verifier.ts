@@ -9,12 +9,14 @@ export interface LayoutShift {
 }
 
 export interface VerificationResult {
-  verdict: 'PASSED' | 'REGRESSION' | 'PARTIAL_FIX';
+  verdict: 'PASSED' | 'REGRESSION' | 'PARTIAL_FIX' | 'INCONCLUSIVE';
   scoreDelta: number;
   beforeScore: number;
   afterScore: number;
   resolvedDefects: string[];
   newRegressions: string[];
+  missingElements: string[];
+  addedElements: string[];
   layoutShifts: LayoutShift[];
   summary: string;
 }
@@ -144,6 +146,9 @@ function extractElementRects(result: WebInspectionResult): Map<string, NodeRect>
       if (!map.has(selector)) {
         map.set(selector, node.rect);
       }
+      if (node.componentName && !map.has(`Component:${node.componentName}`)) {
+        map.set(`Component:${node.componentName}`, node.rect);
+      }
     }
 
     if (node.children && Array.isArray(node.children)) {
@@ -172,6 +177,9 @@ function extractElementRects(result: WebInspectionResult): Map<string, NodeRect>
         if (!map.has(el.selector)) {
           map.set(el.selector, el.rect);
         }
+        if (el.componentName && !map.has(`Component:${el.componentName}`)) {
+          map.set(`Component:${el.componentName}`, el.rect);
+        }
       }
     }
   }
@@ -181,6 +189,7 @@ function extractElementRects(result: WebInspectionResult): Map<string, NodeRect>
 
 export interface VerifyChangeOptions {
   allowedShiftSelectors?: string[];
+  allowedRemovedSelectors?: string[];
   maxAcceptableShiftPx?: number;
 }
 
@@ -194,6 +203,27 @@ export function verifyChange(
   const scoreDelta = afterScore - beforeScore;
   const thresholdPx = options?.maxAcceptableShiftPx ?? 2;
   const allowedSelectors = options?.allowedShiftSelectors ?? [];
+  const allowedRemoved = options?.allowedRemovedSelectors ?? [];
+
+  const beforeRects = extractElementRects(before);
+  const afterRects = extractElementRects(after);
+
+  // Check inconclusive state (broken rendering, empty DOM tree, or crashed capture)
+  const isBrokenRender = !before?.layoutTree || !after?.layoutTree || (beforeRects.size > 0 && afterRects.size === 0);
+  if (isBrokenRender) {
+    return {
+      verdict: 'INCONCLUSIVE',
+      scoreDelta: 0,
+      beforeScore,
+      afterScore,
+      resolvedDefects: [],
+      newRegressions: ['Verification inconclusive: target page failed to render or produced empty layout tree'],
+      missingElements: [],
+      addedElements: [],
+      layoutShifts: [],
+      summary: 'Verification INCONCLUSIVE: target page failed to render or produced empty layout tree.'
+    };
+  }
 
   const beforeDefects = extractDefects(before);
   const afterDefects = extractDefects(after);
@@ -212,15 +242,23 @@ export function verifyChange(
     }
   }
 
-  const beforeRects = extractElementRects(before);
-  const afterRects = extractElementRects(after);
-
   const layoutShifts: LayoutShift[] = [];
   const unexpectedShifts: LayoutShift[] = [];
+  const missingElements: string[] = [];
+  const addedElements: string[] = [];
 
   for (const [selector, bRect] of beforeRects.entries()) {
     const aRect = afterRects.get(selector);
-    if (!aRect) continue;
+    if (!aRect) {
+      // Element missing in after state!
+      const isAllowedRemoval = [...allowedSelectors, ...allowedRemoved].some(
+        (pattern) => selector === pattern || selector.includes(pattern) || pattern.includes(selector)
+      );
+      if (!isAllowedRemoval) {
+        missingElements.push(selector);
+      }
+      continue;
+    }
 
     const deltaX = aRect.x - bRect.x;
     const deltaY = aRect.y - bRect.y;
@@ -253,8 +291,14 @@ export function verifyChange(
     }
   }
 
-  let verdict: 'PASSED' | 'REGRESSION' | 'PARTIAL_FIX';
-  if (newRegressions.length > 0 || unexpectedShifts.length > 0 || scoreDelta < 0) {
+  for (const selector of afterRects.keys()) {
+    if (!beforeRects.has(selector)) {
+      addedElements.push(selector);
+    }
+  }
+
+  let verdict: 'PASSED' | 'REGRESSION' | 'PARTIAL_FIX' | 'INCONCLUSIVE';
+  if (missingElements.length > 0 || newRegressions.length > 0 || unexpectedShifts.length > 0 || scoreDelta < 0) {
     verdict = 'REGRESSION';
   } else if (afterDefects.size > 0) {
     verdict = 'PARTIAL_FIX';
@@ -270,10 +314,13 @@ export function verifyChange(
   if (newRegressions.length > 0) {
     parts.push(`${newRegressions.length} new regression(s) detected.`);
   }
+  if (missingElements.length > 0) {
+    parts.push(`${missingElements.length} unexpected missing element(s) disappeared.`);
+  }
   if (layoutShifts.length > 0) {
     parts.push(`${layoutShifts.length} unexpected layout shift(s) (>=2px).`);
   }
-  if (resolvedDefects.length === 0 && newRegressions.length === 0 && layoutShifts.length === 0) {
+  if (resolvedDefects.length === 0 && newRegressions.length === 0 && layoutShifts.length === 0 && missingElements.length === 0) {
     parts.push('No visual or defect changes detected.');
   }
 
@@ -284,6 +331,8 @@ export function verifyChange(
     afterScore,
     resolvedDefects,
     newRegressions,
+    missingElements,
+    addedElements,
     layoutShifts,
     summary: parts.join(' ')
   };

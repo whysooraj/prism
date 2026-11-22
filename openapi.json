@@ -161,6 +161,10 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "sessionId": {
+                    "type": "string",
+                    "description": "The active project session ID returned from connect-project to isolate multi-project context."
+                  },
                   "urlOrRoute": {
                     "type": "string",
                     "description": "The URL or application route of the page (e.g. '/dashboard')."
@@ -373,6 +377,10 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "sessionId": {
+                    "type": "string",
+                    "description": "Optional active project session ID returned from connect-project to isolate multi-project context."
+                  },
                   "target": {
                     "type": "string",
                     "description": "Symbol name or file path to analyze."
@@ -413,6 +421,10 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "sessionId": {
+                    "type": "string",
+                    "description": "Optional active project session ID to resolve isolated repository index and application URL."
+                  },
                   "selector": {
                     "type": "string",
                     "description": "DOM selector of interest."

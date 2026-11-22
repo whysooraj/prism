@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import type { CodeSymbol, RepoMetadata, RouteDefinition, SymbolKind, ImpactAnalysisResult } from '../types.js';
+import type { CodeSymbol, RepoMetadata, RouteDefinition, SymbolKind, ImpactAnalysisResult, DependencyEdge } from '../types.js';
 import type { ReExportDefinition } from './parser.js';
 
 export interface SearchMatch {
@@ -340,10 +340,13 @@ export class RepositoryIndexManager {
             isMatch = true;
             break;
           }
-          // Fallback to basename substring if unresolved
-          if (resolved === null && imp.includes(defBase)) {
-            isMatch = true;
-            break;
+          // Fallback to exact basename specifier match if unresolved (avoids partial substring matches)
+          if (resolved === null) {
+            const specifierBase = imp.split('/').pop()?.replace(/\.[^/.]+$/, '');
+            if (specifierBase && specifierBase === defBase) {
+              isMatch = true;
+              break;
+            }
           }
         }
 
@@ -463,21 +466,40 @@ export class RepositoryIndexManager {
     let callers: CallerInfo[] = [];
     let callees: CalleeInfo[] = [];
     const baseFiles = new Set<string>();
+    const confirmedDependents: string[] = [];
+    const heuristicDependents: string[] = [];
+    const dependencyEdges: DependencyEdge[] = [];
 
     if (kind === 'file') {
       const matchedFile =
         this.fileTree.find((f) => f === targetClean || f.endsWith(targetClean)) || targetClean;
       baseFiles.add(matchedFile);
+      const targetBase = path.basename(matchedFile, path.extname(matchedFile));
 
       for (const [importer, imports] of this.importsMap.entries()) {
         if (importer === matchedFile) continue;
         for (const imp of imports) {
           const resolved = this.resolveImport(importer, imp);
-          if (
-            resolved === matchedFile ||
-            (resolved === null && imp.includes(path.basename(matchedFile, path.extname(matchedFile))))
-          ) {
+          const specifierBase = imp.split('/').pop()?.replace(/\.[^/.]+$/, '');
+          if (resolved === matchedFile) {
             directDependents.push(importer);
+            confirmedDependents.push(importer);
+            dependencyEdges.push({
+              fromFile: importer,
+              toFile: matchedFile,
+              type: 'import',
+              confirmed: true
+            });
+            break;
+          } else if (resolved === null && specifierBase && specifierBase === targetBase) {
+            directDependents.push(importer);
+            heuristicDependents.push(importer);
+            dependencyEdges.push({
+              fromFile: importer,
+              toFile: matchedFile,
+              type: 'import',
+              confirmed: false
+            });
             break;
           }
         }
@@ -489,6 +511,18 @@ export class RepositoryIndexManager {
       callees = trace.callees;
       for (const def of trace.definitions) {
         baseFiles.add(def.filePath);
+      }
+      for (const dep of directDependents) {
+        confirmedDependents.push(dep);
+        for (const baseFile of baseFiles) {
+          dependencyEdges.push({
+            fromFile: dep,
+            toFile: baseFile,
+            type: 'import',
+            symbol: targetClean,
+            confirmed: true
+          });
+        }
       }
       if (baseFiles.size === 0) {
         const fileCandidate = this.fileTree.find((f) =>
@@ -503,6 +537,13 @@ export class RepositoryIndexManager {
               const resolved = this.resolveImport(importer, imp);
               if (resolved === fileCandidate) {
                 directDependents.push(importer);
+                confirmedDependents.push(importer);
+                dependencyEdges.push({
+                  fromFile: importer,
+                  toFile: fileCandidate,
+                  type: 'import',
+                  confirmed: true
+                });
                 break;
               }
             }
@@ -516,20 +557,27 @@ export class RepositoryIndexManager {
     const transitiveSet = new Set<string>();
     let queue: string[] = [...directDependents];
     let depth = 1;
+    let maxDepthReached = 0;
 
     while (queue.length > 0 && depth <= 3) {
+      maxDepthReached = depth;
       const nextQueue: string[] = [];
       for (const currentFile of queue) {
+        const curBase = path.basename(currentFile, path.extname(currentFile));
         for (const [importer, imports] of this.importsMap.entries()) {
           if (visited.has(importer)) continue;
           let importsCurrent = false;
+          let isConfirmed = false;
           for (const imp of imports) {
             const resolved = this.resolveImport(importer, imp);
-            if (
-              resolved === currentFile ||
-              (resolved === null && imp.includes(path.basename(currentFile, path.extname(currentFile))))
-            ) {
+            const specifierBase = imp.split('/').pop()?.replace(/\.[^/.]+$/, '');
+            if (resolved === currentFile) {
               importsCurrent = true;
+              isConfirmed = true;
+              break;
+            } else if (resolved === null && specifierBase && specifierBase === curBase) {
+              importsCurrent = true;
+              isConfirmed = false;
               break;
             }
           }
@@ -537,6 +585,17 @@ export class RepositoryIndexManager {
             visited.add(importer);
             transitiveSet.add(importer);
             nextQueue.push(importer);
+            if (isConfirmed) {
+              confirmedDependents.push(importer);
+            } else {
+              heuristicDependents.push(importer);
+            }
+            dependencyEdges.push({
+              fromFile: importer,
+              toFile: currentFile,
+              type: 'import',
+              confirmed: isConfirmed
+            });
           }
         }
       }
@@ -545,6 +604,19 @@ export class RepositoryIndexManager {
     }
 
     const transitiveDependents = Array.from(transitiveSet);
+
+    // Call edges
+    for (const c of callers) {
+      for (const baseFile of baseFiles) {
+        dependencyEdges.push({
+          fromFile: c.filePath,
+          toFile: baseFile,
+          type: 'call',
+          symbol: c.name,
+          confirmed: true
+        });
+      }
+    }
 
     // Affected routes calculation
     const allImpactedFiles = new Set<string>([
@@ -560,6 +632,13 @@ export class RepositoryIndexManager {
         (kind === 'symbol' && r.handler.toLowerCase().includes(targetClean.toLowerCase()))
       ) {
         affectedRoutesSet.add(`${r.method} ${r.path} (${r.file})`);
+        dependencyEdges.push({
+          fromFile: r.file,
+          toFile: r.path,
+          type: 'route',
+          symbol: r.handler,
+          confirmed: true
+        });
       }
     }
     const affectedRoutes = Array.from(affectedRoutesSet);
@@ -593,13 +672,17 @@ export class RepositoryIndexManager {
       recommendations.push(`Direct call sites: ${callers.map((c) => c.name).join(', ')}.`);
     }
 
-    const summary = `Impact Analysis for ${kind} "${targetClean}": ${riskLevel} risk. Affects ${directDependents.length} direct, ${transitiveDependents.length} transitive file(s), and ${affectedRoutes.length} route(s).`;
+    const summary = `Impact Analysis for ${kind} "${targetClean}": ${riskLevel} risk. Bounded analysis (max depth ${maxDepthReached || 1}): affects ${directDependents.length} direct, ${transitiveDependents.length} transitive file(s) (${confirmedDependents.length} confirmed, ${heuristicDependents.length} heuristic), and ${affectedRoutes.length} route(s).`;
 
     return {
       target: targetClean,
       kind,
       directDependents,
       transitiveDependents,
+      confirmedDependents,
+      heuristicDependents,
+      dependencyEdges,
+      maxDepthReached,
       affectedRoutes,
       callers,
       callees,

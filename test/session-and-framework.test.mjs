@@ -115,11 +115,11 @@ test('HTTP Server: POST /api/connect-project and /api/inspect-page', async () =>
       assert.ok(connData.sessionId);
       assert.equal(connData.appUrl, dataUrl);
 
-      // 2. POST /api/inspect-page (omitting url, should inspect active session appUrl)
+      // 2. POST /api/inspect-page (passing sessionId to isolate to connected project)
       const inspectRes = await fetch(`${baseUrl}/api/inspect-page`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ compact: true })
+        body: JSON.stringify({ sessionId: connData.sessionId, compact: true })
       });
       assert.equal(inspectRes.status, 200);
       const inspectData = await inspectRes.json();

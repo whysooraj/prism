@@ -234,11 +234,25 @@ export interface VerificationResult {
   summary: string;
 }
 
+export type DependencyEdgeType = 'import' | 'reexport' | 'call' | 'route' | 'style';
+
+export interface DependencyEdge {
+  fromFile: string;
+  toFile: string;
+  type: DependencyEdgeType;
+  symbol?: string;
+  confirmed: boolean;
+}
+
 export interface ImpactAnalysisResult {
   target: string;
   kind: 'symbol' | 'file';
   directDependents: string[];
   transitiveDependents: string[];
+  confirmedDependents?: string[];
+  heuristicDependents?: string[];
+  dependencyEdges?: DependencyEdge[];
+  maxDepthReached?: number;
   affectedRoutes: string[];
   callers: Array<{
     name: string;

@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { inspectWebsite, captureScreenshots, inspectPage } from './web/page-inspector.js';
 import { verifyChange } from './web/change-verifier.js';
 import { indexRepository, getActiveIndex } from './repo/repo-inspector.js';
-import { connectProject } from './repo/session-manager.js';
+import { connectProject, resolveSessionRepo } from './repo/session-manager.js';
 import { findUiSource, getContext } from './correlation/correlator.js';
 import type { SymbolKind, WebInspectionResult } from './types.js';
 
@@ -426,11 +426,14 @@ export function createServer(): McpServer {
     'trace_impact',
     {
       target: z.string().describe('Symbol name (e.g. Button) or file path (e.g. src/components/Sidebar.tsx) to analyze impact for'),
+      sessionId: z.string().optional().describe('Session ID returned by connect_project'),
       repoIdentifier: z.string().optional().describe('Optional repository name or path if multiple are indexed')
     },
-    async ({ target, repoIdentifier }) => {
+    async ({ target, sessionId, repoIdentifier }) => {
       try {
-        const index = getActiveIndex(repoIdentifier);
+        const index = sessionId
+          ? resolveSessionRepo(sessionId).repoIndex
+          : getActiveIndex(repoIdentifier);
         const result = index.traceImpact(target);
         return {
           content: [
@@ -453,6 +456,7 @@ export function createServer(): McpServer {
   server.tool(
     'get_context',
     {
+      sessionId: z.string().optional().describe('Session ID returned by connect_project'),
       selector: z.string().optional().describe('DOM selector of the element of interest (e.g. "#sidebar" or "button.cta")'),
       textSnippet: z.string().optional().describe('Visible text inside the element of interest'),
       tag: z.string().optional().describe('HTML/JSX tag (e.g. "button", "aside")'),
@@ -460,9 +464,10 @@ export function createServer(): McpServer {
       repoIdentifier: z.string().optional().describe('Optional repository name or path'),
       inspectionResult: z.any().optional().describe('Optional WebInspectionResult payload from inspect_website')
     },
-    async ({ selector, textSnippet, tag, urlOrRoute, repoIdentifier, inspectionResult }) => {
+    async ({ sessionId, selector, textSnippet, tag, urlOrRoute, repoIdentifier, inspectionResult }) => {
       try {
         const result = getContext({
+          sessionId,
           selector,
           textSnippet,
           tag,
@@ -516,10 +521,11 @@ export function createServer(): McpServer {
     }
   );
 
-  // 13. Tool: inspect_page (Context-aware browser inspection using active project session)
+  // 13. Tool: inspect_page (Context-aware browser inspection using project session)
   server.tool(
     'inspect_page',
     {
+      sessionId: z.string().optional().describe('Session ID returned by connect_project'),
       url: z.string().optional().describe('URL to inspect (defaults to connected project appUrl)'),
       compact: z.boolean().default(true).describe('Return compact layout critique without large wireframe SVG payload'),
       viewport: z
@@ -530,11 +536,12 @@ export function createServer(): McpServer {
         .optional()
         .describe('Viewport dimensions'),
       includeA11y: z.boolean().default(false).describe('Extract accessibility tree snapshot'),
-      allowLocalhost: z.boolean().default(true).describe('Allow inspecting localhost endpoints')
+      allowLocalhost: z.boolean().default(false).describe('Allow inspecting localhost endpoints (disabled by default for SSRF safety)')
     },
-    async ({ url, compact, viewport, includeA11y, allowLocalhost }) => {
+    async ({ sessionId, url, compact, viewport, includeA11y, allowLocalhost }) => {
       try {
         const result = await inspectPage({
+          sessionId,
           url,
           compact,
           viewport,

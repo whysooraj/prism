@@ -232,15 +232,32 @@ npx tsx benchmark/speed-benchmark.ts
 
 ## Verification & Testing
 
-Prism comes with a native self-check suite verifying SSRF boundaries, Playwright DOM parsing, and AST symbol extraction:
+Prism comes with a native self-check suite verifying SSRF boundaries, Playwright DOM parsing, session isolation, and AST symbol extraction:
 
 ```bash
 npm test
 ```
 
+### Attribution Benchmark (React-Aware Source Correlation)
+
+Prism includes a ground-truth attribution benchmark measuring source localization across 100 component targets in 8 architectural patterns (nested, shared, HOCs, memoized, server components, dynamic imports, duplicate component names, and CSS modules):
+
+```bash
+npx tsx benchmark/attribution-eval.ts
+```
+
+| Metric | Measured Result | Description |
+| :--- | :--- | :--- |
+| **Top-1 Accuracy** | **80.0%** | Correct source file ranked first |
+| **Top-3 Accuracy** | **100.0%** | Correct source file present in top 3 candidates |
+| **Precision** | **29.9%** | Ratio of returned candidates that are relevant |
+| **Recall** | **100.0%** | Ratio of targets where expected source was retrieved |
+| **Coverage** | **100.0%** | Rendered elements attributed to at least one candidate |
+| **Calibration Score** | **81.0%** | Confidence scores reflect empirical correctness probability |
+
 ### AI UI Readability Benchmark
 
-To measure and verify AI UI comprehension fidelity against mock benchmarks:
+To measure and verify AI UI comprehension fidelity against perception benchmarks:
 
 ```bash
 npx tsx benchmark/readability-eval.ts
@@ -248,11 +265,15 @@ npx tsx benchmark/readability-eval.ts
 
 ---
 
-## Security Model
+## Security Model & Multi-Project Isolation
 
-- **SSRF Hardening**: By default, `inspect_website` intercepts and aborts requests to private IPv4/IPv6 subnets (`127.0.0.0/8`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `169.254.169.254`, `::1`) and local hostnames (`localhost`, `*.local`, `*.internal`).
-- **Browser Sandboxing**: Runs headless Chromium with isolated incognito contexts that terminate immediately upon evaluation completion.
-- **Controlled Ingestion**: Repositories are cloned shallowly with depth 1 into isolated user cache directories (`~/.cache/context-bridge/repos/`) and never shared across unauthorized boundaries.
+- **Multi-Tenant Session Isolation**: Every project connection generates an isolated `sessionId` with configurable TTL (default 2 hours, sliding window on access). Operations strictly isolate repository indexes and application URLs to the provided session, preventing cross-project crosstalk.
+- **SSRF Hardening (Fail-Closed)**: Remote inspection enforces strict outbound safety. Private IPv4/IPv6 subnets (`127.0.0.0/8`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `::1`), link-local/cloud metadata endpoints (`169.254.169.254`, `169.254.170.2`, `100.100.100.200`, `metadata.google.internal`, `instance-data`), and internal hostnames are blocked. DNS lookup failures fail closed.
+- **HTTP Authentication & Rate Limiting**: The HTTP server enforces token authentication via `PRISM_API_KEY` (via `Authorization: Bearer <key>` or `x-api-key: <key>`) and IP rate limiting (60 req/min).
+- **CORS Protection**: Access is restricted to configured origins (`PRISM_ALLOWED_ORIGINS`) or local origins; wildcard `*` is disabled unless explicitly overridden with `PRISM_ALLOW_ALL_ORIGINS=1`.
+- **Change Verification Integrity**: Layout shifts and regressions track both position changes and vanished elements (`missingElements`). Unintentional element disappearance immediately flags a `REGRESSION` verdict, while failed or empty DOM renders produce an `INCONCLUSIVE` verdict.
+- **Browser Sandboxing**: Headless Chromium operates with isolated incognito contexts that terminate immediately upon evaluation completion.
+- **Contained File Access**: Repository file inspection strictly enforces root boundary containment (`getFormattedFile`), preventing directory traversal outside the checked-out repository.
 
 ---
 

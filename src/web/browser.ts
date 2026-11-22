@@ -51,21 +51,30 @@ export function isPrivateIp(ip: string): boolean {
   const ipv4Match = cleanIp.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
   if (ipv4Match) {
     const octets = ipv4Match.slice(1).map(Number);
+    if (octets.some((o) => o > 255)) return true; // Malformed / overflow IP
     if (octets[0] === 127) return true; // Loopback 127.0.0.0/8
     if (octets[0] === 10) return true; // Private 10.0.0.0/8
     if (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31) return true; // 172.16.0.0/12
     if (octets[0] === 192 && octets[1] === 168) return true; // 192.168.0.0/16
-    if (octets[0] === 169 && octets[1] === 254) return true; // Link-local / AWS metadata
-    if (octets[0] === 0) return true; // 0.0.0.0
+    if (octets[0] === 169 && octets[1] === 254) return true; // Link-local / Cloud metadata 169.254.0.0/16
+    if (octets[0] === 100 && octets[1] >= 64 && octets[1] <= 127) return true; // Carrier-grade NAT / Alibaba metadata (100.100.100.200)
+    if (octets[0] === 0) return true; // 0.0.0.0/8
   }
 
-  // Decimal / hex integer notation e.g. 2130706433 or 0x7f000001
-  if (/^(?:0x[0-9a-f]+|\d+)$/i.test(cleanIp)) {
+  // Decimal / hex / octal integer notation e.g. 2130706433 or 0x7f000001 or 017700000001
+  if (/^(?:0x[0-9a-f]+|0[0-7]+|\d+)$/i.test(cleanIp)) {
     return true;
   }
 
-  // IPv6 loopback / unique local / link local
-  if (cleanIp === '::1' || cleanIp.startsWith('fc00:') || cleanIp.startsWith('fe80:') || cleanIp.startsWith('fd00:')) {
+  // IPv6 loopback / unique local / link local / cloud metadata
+  const lowerIp = cleanIp.toLowerCase();
+  if (
+    lowerIp === '::1' ||
+    lowerIp === '::' ||
+    lowerIp.startsWith('fc00:') ||
+    lowerIp.startsWith('fe80:') ||
+    lowerIp.startsWith('fd00:')
+  ) {
     return true;
   }
 
@@ -73,16 +82,21 @@ export function isPrivateIp(ip: string): boolean {
 }
 
 export function isPrivateIpOrHost(hostname: string): boolean {
+  if (!hostname || typeof hostname !== 'string') return true;
   const cleanHost = hostname.replace(/^\[|\]$/g, '').toLowerCase().trim();
 
+  // Cloud metadata and internal hostnames
   if (
     cleanHost === 'localhost' ||
     cleanHost.endsWith('.localhost') ||
     cleanHost.endsWith('.local') ||
     cleanHost.endsWith('.internal') ||
     cleanHost.endsWith('.lan') ||
+    cleanHost.endsWith('.home.arpa') ||
     cleanHost === '127.0.0.1' ||
-    cleanHost === '::1'
+    cleanHost === '::1' ||
+    cleanHost === 'metadata.google.internal' ||
+    cleanHost === 'instance-data'
   ) {
     return true;
   }
@@ -95,10 +109,14 @@ export function isPrivateIpOrHost(hostname: string): boolean {
 }
 
 export async function isSafeDestination(hostname: string): Promise<boolean> {
+  if (!hostname || typeof hostname !== 'string') return false;
   if (isPrivateIpOrHost(hostname)) return false;
 
   try {
     const res = await dns.promises.lookup(hostname, { all: true });
+    if (!res || res.length === 0) {
+      return false; // Fail closed if no addresses returned
+    }
     for (const entry of res) {
       if (isPrivateIp(entry.address)) {
         return false;
@@ -106,7 +124,8 @@ export async function isSafeDestination(hostname: string): Promise<boolean> {
     }
     return true;
   } catch {
-    return true;
+    // Fail closed: if DNS lookup fails or errors, do not allow outbound connection
+    return false;
   }
 }
 

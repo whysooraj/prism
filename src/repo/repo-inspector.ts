@@ -159,24 +159,41 @@ export async function indexRepository(
   };
 }
 
+export function clearRepoRegistry(): void {
+  repoRegistry.clear();
+  lastActiveKey = null;
+}
+
+export function getRepoIndex(repoIdentifier: string): RepositoryIndexManager {
+  if (!repoIdentifier || typeof repoIdentifier !== 'string') {
+    throw new Error('repoIdentifier must be a non-empty string');
+  }
+  const clean = repoIdentifier.toLowerCase().trim();
+  const direct = repoRegistry.get(clean);
+  if (direct) return direct;
+  for (const [k, v] of repoRegistry.entries()) {
+    if (k === clean || k.includes(clean) || clean.includes(k)) return v;
+  }
+  throw new Error(`Repository not found for identifier: "${repoIdentifier}". Call index_repository or connect_project first.`);
+}
+
 export function getActiveIndex(repoIdentifier?: string): RepositoryIndexManager {
   if (repoIdentifier) {
-    const direct = repoRegistry.get(repoIdentifier.toLowerCase());
-    if (direct) return direct;
-    for (const [k, v] of repoRegistry.entries()) {
-      if (k.includes(repoIdentifier.toLowerCase())) return v;
-    }
+    return getRepoIndex(repoIdentifier);
   }
 
-  if (lastActiveKey && repoRegistry.has(lastActiveKey)) {
-    return repoRegistry.get(lastActiveKey)!;
+  // Count unique repository manager instances to distinguish multiple projects
+  const uniqueRepos = new Set(repoRegistry.values());
+  if (uniqueRepos.size === 1) {
+    return uniqueRepos.values().next().value!;
+  }
+  if (uniqueRepos.size > 1) {
+    throw new Error(
+      `Multiple repositories are indexed (${uniqueRepos.size}). You must specify sessionId or repoIdentifier to isolate operations.`
+    );
   }
 
-  if (repoRegistry.size > 0) {
-    return repoRegistry.values().next().value!;
-  }
-
-  throw new Error('No repository has been indexed yet. Call index_repository first.');
+  throw new Error('No repository has been indexed yet. Call connect_project or index_repository first.');
 }
 
 export function traceImpact(target: string, repoIdentifier?: string) {
