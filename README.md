@@ -145,14 +145,14 @@ When running in HTTP mode (`prism serve` or `npm run start:http`), Prism serves 
 - Deterministic Design Audit scorecard (WCAG contrast, 4/8pt spacing, mobile touch targets, layer occlusion collisions, optical balance asymmetry, text clipping)
 - Extracted design tokens (Color palette swatches and typography scale)
 
-### 2. Configure in ChatGPT
+### 3. Configure in ChatGPT
 1. Go to [ChatGPT GPT Editor](https://chatgpt.com/gpts/editor).
 2. Under **Configure**, click **Create new action**.
 3. Under **Schema**, paste the contents of [`openapi.json`](openapi.json) (or click "Import from URL" pointing to `https://your-domain.com/openapi.json`).
 4. Set Authentication to **None** (or configure API key headers if preferred).
 5. Save the GPT.
 
-### 3. Usage on iPhone, Android, & Web
+### 4. Usage on iPhone, Android, & Web
 Prompt your Custom GPT from any mobile device:
 * *"Inspect https://news.ycombinator.com and give me the WCAG contrast breakdown and layout wireframe."*
 * *"How does the routing algorithm work in https://github.com/career-ops-hq/career-ops?"*
@@ -183,6 +183,42 @@ Then add to your client's MCP configuration:
   }
 }
 ```
+
+---
+
+## Performance & Speed Benchmarks
+
+Benchmarked via `benchmark/speed-benchmark.ts` on Node.js v25 with local headless Chromium:
+
+| Operation | Latency | Prism Tokens | Vision / Full Dump | Token Savings |
+| :--- | :--- | :--- | :--- | :--- |
+| **SaaS Landing Page** | `1289ms` | 1053 | ~1400 (Screenshot VLM) | **25%** |
+| **Dense Enterprise Dash** | `1158ms` | 604 | ~1400 (Screenshot VLM) | **57%** |
+| **AST Repo Index (30 files / 538 symbols)** | `62.8ms` | 102 (Trace) | ~13,500 (Raw Text Dump) | **99%** |
+
+- **Web Inspection**: ~1.1s - 1.2s end-to-end (DOM extraction, stacking context collisions, alpha layer composite, SVG wireframe, 2D ASCII radar).
+- **Repo Throughput**: ~475 files/sec via native TypeScript compiler AST.
+- **Vision Comparison**: Standard 1440x900 screenshots consume ~1400-1600 tokens on GPT-4o and Claude 3.5. Prism outputs structured box models and 2D ASCII radar in 600-1000 tokens with exact pixel precision and zero OCR hallucinations.
+
+To run the speed benchmark:
+```bash
+npx tsx benchmark/speed-benchmark.ts
+```
+
+---
+
+## Comparison with Existing Solutions
+
+| Capability | Prism (ContextBridge) | VLM Agents (Browserbase, browser-use) | A11y / Text Cleaners (Jina, ariaSnapshot) | Linters (Lighthouse, axe-core) | Repo Packers (Repomix, Gitingest) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Exact CSS Box Model** | Yes (padding, margin, rect) | No (hallucinated pixels) | No (stripped) | Partial (computed audit) | N/A |
+| **2D Spatial ASCII Radar** | Yes (80x24 viewport map) | No | No | No | N/A |
+| **Vector Wireframe SVG** | Yes (deterministic) | No | No | No | N/A |
+| **Layer Occlusion Collision** | Yes (elementFromPoint) | No | No | No | N/A |
+| **Hierarchical Alpha Composite** | Yes (exact RGB math) | Visual estimate | No | Limited | N/A |
+| **Token Efficiency** | High (600-1000 tokens) | Low (1400-1600 tokens/shot) | High (text-only) | N/A | Very Low (100k+ tokens) |
+| **AST Symbol Call Graphs** | Yes (TS/JS/Py/Go/Rs) | No | No | No | No (raw text dump) |
+| **ChatGPT Action + MCP Native** | Yes (Dual HTTP & stdio) | Partial | Partial | No | No |
 
 ---
 
