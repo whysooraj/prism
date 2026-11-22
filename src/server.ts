@@ -1,8 +1,9 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { inspectWebsite, captureScreenshots } from './web/page-inspector.js';
+import { inspectWebsite, captureScreenshots, inspectPage } from './web/page-inspector.js';
 import { verifyChange } from './web/change-verifier.js';
 import { indexRepository, getActiveIndex } from './repo/repo-inspector.js';
+import { connectProject } from './repo/session-manager.js';
 import { findUiSource, getContext } from './correlation/correlator.js';
 import type { SymbolKind, WebInspectionResult } from './types.js';
 
@@ -481,6 +482,77 @@ export function createServer(): McpServer {
         return {
           isError: true,
           content: [{ type: 'text', text: `Get context error: ${err.message}` }]
+        };
+      }
+    }
+  );
+
+  // 12. Tool: connect_project (Register repository and running application session)
+  server.tool(
+    'connect_project',
+    {
+      repoPath: z.string().describe('Absolute local path or git URL to the repository'),
+      appUrl: z.string().optional().describe('URL of the running application (e.g. http://localhost:3000)'),
+      branch: z.string().optional().describe('Git branch to checkout'),
+      authToken: z.string().optional().describe('Git authentication token if private')
+    },
+    async ({ repoPath, appUrl, branch, authToken }) => {
+      try {
+        const session = await connectProject({ repoPath, appUrl, branch, authToken });
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(session, null, 2)
+            }
+          ]
+        };
+      } catch (err: any) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Connect project error: ${err.message}` }]
+        };
+      }
+    }
+  );
+
+  // 13. Tool: inspect_page (Context-aware browser inspection using active project session)
+  server.tool(
+    'inspect_page',
+    {
+      url: z.string().optional().describe('URL to inspect (defaults to connected project appUrl)'),
+      compact: z.boolean().default(true).describe('Return compact layout critique without large wireframe SVG payload'),
+      viewport: z
+        .object({
+          width: z.number().default(1440),
+          height: z.number().default(900)
+        })
+        .optional()
+        .describe('Viewport dimensions'),
+      includeA11y: z.boolean().default(false).describe('Extract accessibility tree snapshot'),
+      allowLocalhost: z.boolean().default(true).describe('Allow inspecting localhost endpoints')
+    },
+    async ({ url, compact, viewport, includeA11y, allowLocalhost }) => {
+      try {
+        const result = await inspectPage({
+          url,
+          compact,
+          viewport,
+          includeA11y,
+          allowLocalhost
+        });
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2)
+            }
+          ]
+        };
+      } catch (err: any) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Inspect page error: ${err.message}` }]
         };
       }
     }

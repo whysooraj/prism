@@ -3,6 +3,7 @@ import { createSafeContext } from './browser.js';
 import { generateWireframeSvg } from './layout.js';
 import { generateAsciiRadar } from './ascii-radar.js';
 import { auditDesign, calculateContrastRatio, parseRgb } from './design-audit.js';
+import { getActiveSession } from '../repo/session-manager.js';
 import type {
   ContrastIssue,
   DesignPalette,
@@ -161,10 +162,51 @@ export async function inspectWebsite(options: InspectOptions): Promise<WebInspec
         return isNaN(num) ? 0 : Math.round(num);
       }
 
+      function getComponentName(el: Element): string | undefined {
+        try {
+          const explicit =
+            el.getAttribute('data-component') ||
+            el.getAttribute('data-component-name') ||
+            el.getAttribute('data-react-component') ||
+            el.getAttribute('data-testid');
+          if (explicit) return explicit;
+
+          const anyEl = el as any;
+          const fiberKey = Object.keys(anyEl).find((k) =>
+            k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$')
+          );
+          if (fiberKey) {
+            let fiber = anyEl[fiberKey];
+            while (fiber) {
+              if (fiber.type && typeof fiber.type === 'function') {
+                const name = fiber.type.displayName || fiber.type.name;
+                if (name && !['Fragment', 'Suspense', 'Provider', 'Consumer', 'Context'].includes(name)) {
+                  return name;
+                }
+              } else if (fiber.type && typeof fiber.type === 'object' && fiber.type.render) {
+                const name = fiber.type.displayName || fiber.type.render.name;
+                if (name) return name;
+              }
+              fiber = fiber.return;
+            }
+          }
+
+          if (anyEl.__vueParentComponent) {
+            const name = anyEl.__vueParentComponent.type?.name || anyEl.__vueParentComponent.type?.__name;
+            if (name) return name;
+          }
+
+          if (el.tagName.includes('-')) {
+            return el.tagName.toLowerCase();
+          }
+        } catch {}
+        return undefined;
+      }
+
       const backgroundsMap: Record<string, number> = {};
       const textColorsMap: Record<string, number> = {};
       const typographyMap: Record<string, { family: string; size: string; weight: string; lineHeight: string; count: number }> = {};
-      const interactiveList: { tag: string; type?: string; selector: string; text: string; rect: any; disabled?: boolean }[] = [];
+      const interactiveList: { tag: string; type?: string; selector: string; componentName?: string; text: string; rect: any; disabled?: boolean }[] = [];
       const contrastCandidateList: { element: string; selector: string; fg: string; bg: string; text: string; fontSize: number }[] = [];
       const spacingCandidateList: { element: string; selector: string; property: string; value: string; num: number }[] = [];
       const touchTargetCandidateList: { element: string; selector: string; width: number; height: number }[] = [];
@@ -361,6 +403,7 @@ export async function inspectWebsite(options: InspectOptions): Promise<WebInspec
             tag,
             type: (el as HTMLInputElement).type,
             selector,
+            componentName: getComponentName(el),
             text,
             rect: { x: Math.round(rect.x), y: Math.round(rect.y), width: Math.round(rect.width), height: Math.round(rect.height) },
             disabled: (el as HTMLButtonElement).disabled
@@ -543,6 +586,7 @@ export async function inspectWebsite(options: InspectOptions): Promise<WebInspec
           id: el.id || undefined,
           classes: Array.from(el.classList),
           role: el.getAttribute('role') || undefined,
+          componentName: getComponentName(el),
           textSnippet: directText.length > 0 ? directText.slice(0, 40) : undefined,
           rect: {
             x: Math.round(rect.x),
@@ -759,4 +803,56 @@ export async function captureScreenshots(options: {
     desktopBase64: desktopBuffer.toString('base64'),
     mobileBase64: mobileBuffer.toString('base64')
   };
+}
+
+export interface InspectPageOptions {
+  url?: string;
+  viewport?: { width: number; height: number };
+  compact?: boolean;
+  includeA11y?: boolean;
+  allowLocalhost?: boolean;
+}
+
+export async function inspectPage(options: InspectPageOptions = {}): Promise<any> {
+  const activeSession = getActiveSession();
+  const targetUrl = options.url || activeSession?.appUrl;
+
+  if (!targetUrl) {
+    throw new Error(
+      'No URL provided and no active project session has an appUrl configured. Call connect_project or pass "url".'
+    );
+  }
+
+  const isLocal =
+    targetUrl.includes('localhost') ||
+    targetUrl.includes('127.0.0.1') ||
+    targetUrl.startsWith('data:') ||
+    Boolean(options.allowLocalhost);
+
+  const result = await inspectWebsite({
+    url: targetUrl,
+    viewport: options.viewport || { width: 1440, height: 900 },
+    includeWireframeSvg: !options.compact,
+    includeA11y: options.includeA11y || false,
+    allowLocalhost: isLocal
+  });
+
+  if (options.compact) {
+    return {
+      url: result.url,
+      title: result.title,
+      viewport: result.viewport,
+      designCritique: {
+        score: result.critique.score,
+        summary: result.critique.summary,
+        contrastIssuesCount: result.critique.contrastIssues?.length || 0,
+        spacingIssuesCount: result.critique.spacingIssues?.length || 0,
+        touchTargetIssuesCount: result.critique.touchTargetIssues?.length || 0
+      },
+      interactiveElements: result.interactiveElements.slice(0, 20),
+      asciiRadar: result.asciiRadar
+    };
+  }
+
+  return result;
 }

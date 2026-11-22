@@ -30,6 +30,7 @@ export interface LayoutNode {
   id?: string;
   classes: string[];
   role?: string;
+  componentName?: string;
   textSnippet?: string;
   rect: NodeRect;
   boxModel: BoxModel;
@@ -150,6 +151,7 @@ export interface InteractiveElement {
   tag: string;
   type?: string;
   selector: string;
+  componentName?: string;
   text: string;
   rect: NodeRect;
   disabled?: boolean;

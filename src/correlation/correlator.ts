@@ -27,6 +27,7 @@ export interface FindUiSourceOptions {
   selector?: string;
   textSnippet?: string;
   tag?: string;
+  componentName?: string;
   repoIdentifier?: string;
 }
 
@@ -36,6 +37,7 @@ export function findUiSource(options: FindUiSourceOptions): UiSourceCorrelationR
     selector = '',
     textSnippet = '',
     tag = '',
+    componentName = '',
     repoIdentifier
   } = options;
 
@@ -125,6 +127,26 @@ export function findUiSource(options: FindUiSourceOptions): UiSourceCorrelationR
     const evidence: string[] = [];
     let score = 0;
     let hitLine: number | undefined = undefined;
+
+    // Check direct framework component name
+    if (componentName) {
+      const compLower = componentName.toLowerCase();
+      const baseNameLower = path.basename(relPath, path.extname(relPath)).toLowerCase();
+      if (baseNameLower === compLower) {
+        score += 0.85;
+        evidence.push(`Exact framework component file match: ${componentName}`);
+      } else if (
+        content.includes(`function ${componentName}`) ||
+        content.includes(`const ${componentName}`) ||
+        content.includes(`class ${componentName}`) ||
+        content.includes(`export default ${componentName}`)
+      ) {
+        score += 0.8;
+        evidence.push(`Defines framework component: ${componentName}`);
+        const l = lines.findIndex((ln) => ln.includes(componentName));
+        if (l >= 0 && !hitLine) hitLine = l + 1;
+      }
+    }
 
     // Check data-testid
     if (targetTestId && content.includes(targetTestId)) {
@@ -248,17 +270,8 @@ export function getContext(options: GetContextOptions): CompactTaskContext {
     inspectionResult
   } = options;
 
-  // 1. Correlate element to source candidates
-  const correlation = findUiSource({
-    repoIdentifier,
-    urlOrRoute,
-    selector,
-    textSnippet,
-    tag
-  });
-
-  // 2. Extract bounds & visual issues if inspectionResult is provided
   let bounds: { x: number; y: number; width: number; height: number } | undefined = undefined;
+  let detectedComponentName: string | undefined = undefined;
   const issues: string[] = [];
 
   if (inspectionResult) {
@@ -268,6 +281,9 @@ export function getContext(options: GetContextOptions): CompactTaskContext {
       );
       if (el?.rect) {
         bounds = el.rect;
+      }
+      if (el?.componentName) {
+        detectedComponentName = el.componentName;
       }
     }
 
@@ -296,6 +312,16 @@ export function getContext(options: GetContextOptions): CompactTaskContext {
       }
     }
   }
+
+  // Correlate element to source candidates
+  const correlation = findUiSource({
+    repoIdentifier,
+    urlOrRoute,
+    selector,
+    textSnippet,
+    tag,
+    componentName: detectedComponentName
+  });
 
   // 3. Compute impact for primary candidate
   const primary = correlation.sourceCandidates[0];

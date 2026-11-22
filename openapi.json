@@ -455,6 +455,110 @@
           }
         }
       }
+    },
+    "/api/connect-project": {
+      "post": {
+        "summary": "Register repository and running application session",
+        "operationId": "connectProject",
+        "description": "Connects a local repository path and optional running application URL to establish an active context session.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "repoPath": {
+                    "type": "string",
+                    "description": "Absolute local path or git URL to repository."
+                  },
+                  "appUrl": {
+                    "type": "string",
+                    "description": "URL of running application (e.g. http://localhost:3000)."
+                  },
+                  "branch": {
+                    "type": "string",
+                    "description": "Git branch to inspect."
+                  },
+                  "authToken": {
+                    "type": "string",
+                    "description": "Git authentication token."
+                  }
+                },
+                "required": ["repoPath"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Active project session summary.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inspect-page": {
+      "post": {
+        "summary": "Context-aware browser inspection using active project session",
+        "operationId": "inspectPage",
+        "description": "Inspects a web page, defaulting to the connected project session appUrl when omitted. Returns compact critique or full inspection payload.",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "description": "Optional page URL override."
+                  },
+                  "compact": {
+                    "type": "boolean",
+                    "description": "Return compact layout summary without large SVG wireframe.",
+                    "default": true
+                  },
+                  "viewport": {
+                    "type": "object",
+                    "properties": {
+                      "width": { "type": "number", "default": 1440 },
+                      "height": { "type": "number", "default": 900 }
+                    }
+                  },
+                  "includeA11y": {
+                    "type": "boolean",
+                    "description": "Extract full accessibility tree snapshot."
+                  },
+                  "allowLocalhost": {
+                    "type": "boolean",
+                    "description": "Allow inspecting localhost endpoints.",
+                    "default": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Web page inspection result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

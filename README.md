@@ -108,6 +108,8 @@ Prism adheres to both the **Model Context Protocol (MCP)** and the open **Agent 
 
 | Tool | Parameters | Output | Description |
 |---|---|---|---|
+| `connect_project` | `repoPath`: string<br>`appUrl?`: string<br>`branch?`: string | JSON (`ProjectSession`) | Registers a local repository and running application URL to establish an active context session |
+| `inspect_page` | `url?`: string<br>`compact?`: boolean<br>`viewport?`: object | JSON (`WebInspectionResult` or compact summary) | Inspects the running app (defaults to connected session appUrl) with token-efficient output options |
 | `inspect_website` | `url`: string<br>`viewport?`: `{ width, height }`<br>`includeWireframeSvg?`: boolean<br>`includeA11y?`: boolean<br>`allowLocalhost?`: boolean | JSON (`WebInspectionResult`) | Extracts layout tree, box model, design tokens, WCAG contrast score, and wireframe SVG |
 | `capture_screenshots` | `url`: string<br>`allowLocalhost?`: boolean | PNG Base64 (Desktop & Mobile) | Captures dual viewports (1440x900 and 390x844) |
 | `find_ui_source` | `projectPath`: string<br>`selector?`: string<br>`tag?`: string<br>`textSnippet?`: string<br>`currentRoute?`: string | JSON (`FindUiSourceResult`) | Maps rendered DOM elements to likely JSX/TSX source components and lines with confidence scoring |

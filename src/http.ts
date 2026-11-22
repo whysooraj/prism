@@ -3,9 +3,10 @@ import * as http from 'node:http';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { inspectWebsite } from './web/page-inspector.js';
+import { inspectWebsite, inspectPage } from './web/page-inspector.js';
 import { verifyChange } from './web/change-verifier.js';
 import { indexRepository, getActiveIndex } from './repo/repo-inspector.js';
+import { connectProject } from './repo/session-manager.js';
 import { findUiSource, getContext } from './correlation/correlator.js';
 import { closeBrowser } from './web/browser.js';
 import type { SymbolKind, WebInspectionResult } from './types.js';
@@ -322,6 +323,34 @@ export function createHttpServer(): http.Server {
           urlOrRoute: body.urlOrRoute || body.url || body.route,
           repoIdentifier: body.repoIdentifier,
           inspectionResult: body.inspectionResult
+        });
+        return sendJson(res, 200, result);
+      }
+
+      // 11. POST /api/connect-project (Register repository and running application session)
+      if (req.method === 'POST' && pathname === '/api/connect-project') {
+        const body = await parseBody(req);
+        if (!body.repoPath) {
+          return sendJson(res, 400, { error: 'Field "repoPath" is required' });
+        }
+        const session = await connectProject({
+          repoPath: body.repoPath,
+          appUrl: body.appUrl,
+          branch: body.branch,
+          authToken: body.authToken
+        });
+        return sendJson(res, 200, session);
+      }
+
+      // 12. POST /api/inspect-page (Context-aware browser inspection)
+      if (req.method === 'POST' && pathname === '/api/inspect-page') {
+        const body = await parseBody(req);
+        const result = await inspectPage({
+          url: body.url,
+          compact: body.compact !== false,
+          viewport: body.viewport,
+          includeA11y: body.includeA11y,
+          allowLocalhost: body.allowLocalhost ?? true
         });
         return sendJson(res, 200, result);
       }
