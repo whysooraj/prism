@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" fill="none">
+  <defs>
+    <linearGradient id="iconBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#09090b"/>
+      <stop offset="100%" stop-color="#18181b"/>
+    </linearGradient>
+    <linearGradient id="beamInIcon" x1="0%" y1="50%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#71717a" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#e4e4e7" stop-opacity="0.9"/>
+    </linearGradient>
+    <linearGradient id="iconFacet" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.03"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="256" height="256" rx="56" fill="url(#iconBg)"/>
+  <rect width="256" height="256" rx="56" stroke="#27272a" stroke-width="2"/>
+
+  <!-- Incident light -->
+  <path d="M 32 135 L 105 135" stroke="url(#beamInIcon)" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Spectral refraction rays -->
+  <path d="M 148 126 L 225 80" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 152 133 L 232 115" stroke="#10b981" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 152 140 L 232 152" stroke="#6366f1" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 148 147 L 225 185" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Prism Glass Body -->
+  <polygon points="128,52 68,188 188,188" fill="url(#iconFacet)" stroke="#3f3f46" stroke-width="2" stroke-linejoin="round"/>
+  <polygon points="128,76 84,178 172,178" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1.5"/>
+  <line x1="128" y1="52" x2="68" y2="188" stroke="#fafafa" stroke-width="2" stroke-linecap="round" stroke-opacity="0.7"/>
+</svg>
