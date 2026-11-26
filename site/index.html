@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Prism | Deterministic Web Layout & Repository Intelligence Engine for AI Agents</title>
+  <meta name="description" content="Deterministic layout inspection, box-model extraction, WCAG audits, and AST repository intelligence for 70+ AI coding agents via MCP.">
+  <link rel="icon" type="image/svg+xml" href="../assets/icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="site-nav">
+    <div class="container">
+      <div class="brand-logo">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 2 22 22 22" stroke="#3b82f6" fill="rgba(59, 130, 246, 0.15)"></polygon>
+            <line x1="12" y1="2" x2="12" y2="22" stroke="#60a5fa"></line>
+            <line x1="12" y1="12" x2="22" y2="22" stroke="#8b5cf6"></line>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">Prism</span>
+          <span class="brand-subtitle">MCP Engine for Coding Agents</span>
+        </div>
+      </div>
+
+      <div class="nav-links">
+        <a href="#engine" class="nav-link">Engine</a><a href="#interactive-demo" class="nav-link">Live Inspector</a><a href="#architecture" class="nav-link">Pipeline</a><a href="#tools" class="nav-link">13 Tools</a><a href="#agents" class="nav-link">Supported Agents</a><a href="#quickstart" class="nav-link">Quickstart</a>
+      </div>
+
+      <div class="nav-cta-group">
+        <button id="theme-toggle-btn" class="btn btn-secondary btn-sm" aria-label="Toggle theme">
+          <span id="theme-toggle-label">DARK</span>
+        </button>
+        <a href="https://github.com/whysooraj/prism" target="_blank" rel="noopener" class="btn btn-primary btn-sm">
+          GitHub &rarr;
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header class="section section-hero">
+    <div class="container text-center">
+      <div class="eyebrow">Universal Model Context Protocol + Agent Skills Spec</div>
+      <h1 class="hero-title">Deterministic web layout inspection and structural codebase intelligence for AI agents.</h1>
+      <p class="hero-lead text-center" style="margin-left: auto; margin-right: auto;">Stop feeding assistants uncomputed HTML and downscaled screenshots. Prism delivers exact CSS box models, WCAG audits, DOM-to-source mapping, and AST symbol tracing directly into agent context.</p>
+
+      <!-- Quickstart Command -->
+      <div class="hero-cta-group flex-center gap-4 mt-6">
+        <div class="cli-box">
+          <span class="cli-prompt">$</span>
+          <code class="cli-cmd" id="hero-quickstart-cmd">curl -fsSL https://raw.githubusercontent.com/whysooraj/prism/main/install.sh | bash</code>
+          <button class="cli-copy-btn" onclick="navigator.clipboard.writeText('curl -fsSL https://raw.githubusercontent.com/whysooraj/prism/main/install.sh | bash'); alert('Copied installer command!');">COPY</button>
+        </div>
+        <a href="#quickstart" class="btn btn-secondary btn-lg">Install Options &rarr;</a>
+      </div>
+
+      <!-- Trust Badges & Metrics -->
+      <div class="trust-bar mt-8">
+        <div class="text-xs text-muted mb-2">INTEGRATES WITH 70+ DEVELOPER AGENTS VIA MODEL CONTEXT PROTOCOL & OPEN AGENT SKILLS</div>
+        <div class="grid-4 gap-4 mt-4" style="max-width: 900px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr);">
+          <div class="surface-card" style="padding: 12px; text-align: center;">
+            <div class="font-mono text-blue" style="font-size: 16px; font-weight: 700;">13 MCP Tools</div>
+            <div class="text-xs text-muted mt-1">Deterministic Tools</div>
+          </div><div class="surface-card" style="padding: 12px; text-align: center;">
+            <div class="font-mono text-blue" style="font-size: 16px; font-weight: 700;">70+ AI Frameworks</div>
+            <div class="text-xs text-muted mt-1">Supported Agents</div>
+          </div><div class="surface-card" style="padding: 12px; text-align: center;">
+            <div class="font-mono text-blue" style="font-size: 16px; font-weight: 700;">86% Token Reduction</div>
+            <div class="text-xs text-muted mt-1">Context Optimization</div>
+          </div><div class="surface-card" style="padding: 12px; text-align: center;">
+            <div class="font-mono text-blue" style="font-size: 16px; font-weight: 700;">stdio, SSE & REST</div>
+            <div class="text-xs text-muted mt-1">Protocol Support</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Interactive Inspector Workbench -->
+  <section id="interactive-demo" class="section hairline-top">
+    <div class="container">
+      <div class="section-header text-center">
+        <div class="eyebrow">Deterministic Inspection in Action</div>
+        <h2 class="section-title">Mathematical Layout & Source Correlation</h2>
+        <p class="section-desc">Inspect live web elements and correlate them directly to source code without token-heavy full-page dumps or fuzzy vision models.</p>
+      </div>
+
+      <div class="workbench">
+        <!-- Target Selector Tabs -->
+        <div class="workbench-bar flex-between" style="padding: 12px 18px; background: #12141a; border-bottom: 1px solid #1f222a; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
+          <div class="flex-center gap-2" style="display: flex; align-items: center; gap: 8px;">
+            <span class="text-xs text-muted font-mono">SELECT TARGET:</span>
+            <button class="btn btn-secondary btn-sm" data-inspect-target="navbar">Navbar</button>
+            <button class="btn btn-primary btn-sm" data-inspect-target="headline">Hero Headline</button>
+            <button class="btn btn-secondary btn-sm" data-inspect-target="cta-button">CTA Button</button>
+            <button class="btn btn-secondary btn-sm" data-inspect-target="metric-card">Benchmark Card</button>
+          </div>
+          <div class="badge badge-emerald">find_ui_source ACTIVE</div>
+        </div>
+
+        <div class="grid-split-60-40" style="background: #090a0d; border: 1px solid #1f222a; border-top: none; border-radius: 0 0 8px 8px; padding: 20px; gap: 20px;">
+          <!-- Live Preview Canvas -->
+          <div class="workbench-viewport">
+            <div class="viewport-header" style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px; font-family: monospace; font-size: 11px; color: #71717a;">
+              <span class="viewport-dot" style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#ef4444"></span>
+              <span class="viewport-dot" style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#f59e0b"></span>
+              <span class="viewport-dot" style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10b981"></span>
+              <span class="viewport-url" style="margin-left: 8px;">http://localhost:3000 (Active App Session)</span>
+            </div>
+            
+            <div class="viewport-content" style="padding: 24px; background: #0c0d10; border-radius: 6px; min-height: 380px; border: 1px solid #181a20;">
+              <nav style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 16px; border-bottom: 1px solid #1f222a; margin-bottom: 24px; cursor: pointer;" data-inspect-target="navbar">
+                <div style="font-weight: 700; color: #fff;">Acme Cloud UI</div>
+                <div style="display: flex; gap: 12px; font-size: 13px; color: #8e95a5;">
+                  <span>Deploy</span>
+                  <span>Analytics</span>
+                  <span>Settings</span>
+                </div>
+              </nav>
+
+              <div style="text-align: center; padding: 28px 16px; border: 1px dashed rgba(59, 130, 246, 0.4); border-radius: 8px; background: rgba(59, 130, 246, 0.04); margin-bottom: 24px; cursor: pointer;" data-inspect-target="headline">
+                <h3 id="headline-target" style="font-size: 24px; font-weight: 800; color: #f4f4f5; margin-bottom: 8px;">Deterministic layout verification for LLMs</h3>
+                <p style="font-size: 13px; color: #a1a1aa; max-width: 480px; margin: 0 auto 16px;">
+                  Calculates exact CSS bounding metrics, WCAG contrast ratios, and traces components directly into the codebase.
+                </p>
+                <div style="display: flex; justify-content: center; gap: 12px;">
+                  <button class="btn btn-primary" data-inspect-target="cta-button">Deploy Project</button>
+                </div>
+              </div>
+
+              <div class="grid-3" style="gap: 12px; cursor: pointer;" data-inspect-target="metric-card">
+                <div class="surface-card" style="padding: 12px;">
+                  <div class="text-xs text-muted">WCAG 2.1 AA/AAA</div>
+                  <div class="font-mono text-emerald" style="font-size: 16px; font-weight: 700; margin-top: 4px;">100% PASS</div>
+                </div>
+                <div class="surface-card" style="padding: 12px;">
+                  <div class="text-xs text-muted">Bounding Box Drift</div>
+                  <div class="font-mono text-emerald" style="font-size: 16px; font-weight: 700; margin-top: 4px;">0.00 px</div>
+                </div>
+                <div class="surface-card" style="padding: 12px;">
+                  <div class="text-xs text-muted">Tokens Extracted</div>
+                  <div class="font-mono text-blue" style="font-size: 16px; font-weight: 700; margin-top: 4px;">48 Computed</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Computed Metrics & AST Telemetry -->
+          <div class="workbench-telemetry" style="display: flex; flex-direction: column; gap: 16px;">
+            <!-- Box Model Radar -->
+            <div class="surface-card">
+              <div class="card-header flex-between" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <span class="card-title">COMPUTED BOX MODEL</span>
+                <span class="badge badge-blue" id="inspect-element-tag">H1.HERO-TITLE</span>
+              </div>
+              <div class="metrics-table" style="font-size: 12px; display: flex; flex-direction: column; gap: 8px;">
+                <div class="metric-row flex-between" style="display: flex; justify-content: space-between;">
+                  <span class="metric-key text-muted">Bounding Box:</span>
+                  <span class="metric-val font-mono"><span id="metric-width">684.00</span> &times; <span id="metric-height">68.00</span> px</span>
+                </div>
+                <div class="metric-row flex-between" style="display: flex; justify-content: space-between;">
+                  <span class="metric-key text-muted">Padding:</span>
+                  <span class="metric-val font-mono" id="metric-padding">0px 0px 8px 0px</span>
+                </div>
+                <div class="metric-row flex-between" style="display: flex; justify-content: space-between;">
+                  <span class="metric-key text-muted">Margin:</span>
+                  <span class="metric-val font-mono" id="metric-margin">0px 0px 8px 0px</span>
+                </div>
+                <div class="metric-row flex-between" style="display: flex; justify-content: space-between;">
+                  <span class="metric-key text-muted">Computed Typography:</span>
+                  <span class="metric-val font-mono" id="metric-font">26px / 34px (Plus Jakarta Sans)</span>
+                </div>
+                <div class="metric-row flex-between" style="display: flex; justify-content: space-between;">
+                  <span class="metric-key text-muted">Color & Background:</span>
+                  <span class="metric-val font-mono"><span id="metric-color-hex">#F4F4F5</span> on <span id="metric-bg-hex">#0C0D10</span></span>
+                </div>
+                <div class="metric-row flex-between" style="display: flex; justify-content: space-between;">
+                  <span class="metric-key text-muted">WCAG Contrast:</span>
+                  <span class="metric-val font-mono text-emerald"><span id="metric-contrast-ratio">13.4:1</span> (<span id="metric-contrast-badge">AAA PASS</span>)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- DOM to Source Match -->
+            <div class="surface-card">
+              <div class="card-header flex-between" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span class="card-title">FIND_UI_SOURCE CORRELATION</span>
+                <span class="badge badge-emerald">CONFIDENCE 98%</span>
+              </div>
+              <div class="font-mono text-xs" style="line-height: 1.8; color: #a1a1aa;">
+                <div>File: <b class="text-blue" id="inspect-source-link">src/components/Hero.tsx:42</b></div>
+                <div>Component: <b class="text-emerald" id="inspect-component-name">&lt;HeroHeadline /&gt;</b></div>
+                <div>Git Commit: <span class="text-muted" id="inspect-git-commit">ea8d80f (clean working tree)</span></div>
+                <div class="ast-slice mt-2" style="background: #09090b; padding: 8px 12px; border-radius: 4px; border: 1px solid #1f222a; font-size: 11px;">
+                  <span style="color:#555">41 |</span> &lt;header className="hero-wrap"&gt;<br>
+                  <span style="color:#3b82f6;">42 |</span>   &lt;h1 className="hero-title"&gt;Deterministic layout verification...&lt;/h1&gt;<br>
+                  <span style="color:#555">43 |</span> &lt;/header&gt;
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Problem Section -->
+  <section id="engine" class="section hairline-top">
+    <div class="container">
+      <div class="section-header text-center">
+        <div class="eyebrow">The Context Vacuum</div>
+        <h2 class="section-title">Why Raw HTML and Downscaled Screenshots Blind AI Models</h2>
+        <p class="section-desc">Standard LLM toolkits provide agents with low-fidelity approximations that force models to hallucinate layout dimensions and read codebases through unindexed string search.</p>
+      </div>
+
+      <div class="grid-2 gap-6">
+        <div class="surface-card" style="padding: 24px;">
+          <span class="badge badge-blue mb-4">Web Inspection</span>
+          <div style="border-left: 2px solid #ef4444; padding-left: 14px; margin-bottom: 18px;">
+            <div style="color: #ef4444; font-weight: 700; font-size: 14px;">Uncomputed HTML & Vision Screenshots</div>
+            <ul style="list-style: none; margin-top: 8px; display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: #8e95a5;">
+              <li>• Raw DOM text omits computed CSS cascade, box-model rects, and render coordinates.</li><li>• Screenshots compressed to 1024px blur micro-typography, subpixel padding, and borders.</li><li>• Vision models cannot mathematically measure WCAG contrast ratios or 8pt grid alignment.</li>
+            </ul>
+          </div>
+
+          <div style="border-left: 2px solid #10b981; padding-left: 14px;">
+            <div style="color: #10b981; font-weight: 700; font-size: 14px;">Deterministic Headless Layout Extraction</div>
+            <ul style="list-style: none; margin-top: 8px; display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: #a1a1aa;">
+              <li>• Extracts real computed values directly from Chromium layout engine.</li><li>• Generates 2D ASCII spatial radars and exact box models: padding, margin, bounds.</li><li>• Computes exact WCAG AAA color contrast ratios and flags layer occlusion collisions.</li>
+            </ul>
+          </div>
+        </div><div class="surface-card" style="padding: 24px;">
+          <span class="badge badge-blue mb-4">Codebase Navigation</span>
+          <div style="border-left: 2px solid #ef4444; padding-left: 14px; margin-bottom: 18px;">
+            <div style="color: #ef4444; font-weight: 700; font-size: 14px;">Full-File Dumps & Naive Grep</div>
+            <ul style="list-style: none; margin-top: 8px; display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: #8e95a5;">
+              <li>• Dumping entire files burns thousands of context tokens and triggers attention drift.</li><li>• Text regex cannot trace AST relationships, inheritance, or route decorators.</li><li>• Agents cannot deduce which source file produced a rendered DOM element.</li>
+            </ul>
+          </div>
+
+          <div style="border-left: 2px solid #10b981; padding-left: 14px;">
+            <div style="color: #10b981; font-weight: 700; font-size: 14px;">AST Symbol Indexing & Line-Sliced Retrieval</div>
+            <ul style="list-style: none; margin-top: 8px; display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: #a1a1aa;">
+              <li>• Fast tree-sitter AST parser extracts function signatures, classes, and exported routes.</li><li>• get_file delivers line-sliced fragments with line numbers, eliminating context pollution.</li><li>• find_ui_source correlates rendered DOM tags and text directly to JSX/TSX source lines.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Architecture Section -->
+  <section id="architecture" class="section hairline-top">
+    <div class="container">
+      <div class="section-header text-center">
+        <div class="eyebrow">System Design</div>
+        <h2 class="section-title">Tri-Core Intelligence Pipeline</h2>
+        <p class="section-desc">Prism operates as a high-throughput bridge connecting external AI agents to deterministic web runtime and AST repository indexes.</p>
+      </div>
+
+      <div class="grid-4 gap-4" style="display: grid; grid-template-columns: repeat(4, 1fr);">
+        <div class="surface-card" style="padding: 16px;">
+          <div class="card-header">
+            <span class="badge badge-blue font-mono">01</span>
+            <h3 class="card-title mt-2" style="font-size: 14px;">MCP Transport Layer</h3>
+          </div>
+          <div class="text-xs font-mono text-emerald mt-1">stdio / SSE / REST</div>
+          <p class="text-xs text-muted mt-2">Exposes standard Model Context Protocol tools to agents like Antigravity, Claude Code, Cursor, and OpenClaw, with zero agent-side modifications.</p>
+        </div><div class="surface-card" style="padding: 16px;">
+          <div class="card-header">
+            <span class="badge badge-blue font-mono">02</span>
+            <h3 class="card-title mt-2" style="font-size: 14px;">Web Inspection Pipeline</h3>
+          </div>
+          <div class="text-xs font-mono text-emerald mt-1">Headless Chromium</div>
+          <p class="text-xs text-muted mt-2">Navigates target URLs, evaluates computed styles, runs WCAG audits, computes 2D spatial radars, and renders vector wireframe SVGs.</p>
+        </div><div class="surface-card" style="padding: 16px;">
+          <div class="card-header">
+            <span class="badge badge-blue font-mono">03</span>
+            <h3 class="card-title mt-2" style="font-size: 14px;">Correlation & Verification Engine</h3>
+          </div>
+          <div class="text-xs font-mono text-emerald mt-1">DOM <-> Source Matcher</div>
+          <p class="text-xs text-muted mt-2">Maps rendered selectors to code lines with find_ui_source, and computes differential layout regressions across state transitions with verify_change.</p>
+        </div><div class="surface-card" style="padding: 16px;">
+          <div class="card-header">
+            <span class="badge badge-blue font-mono">04</span>
+            <h3 class="card-title mt-2" style="font-size: 14px;">AST Repository Pipeline</h3>
+          </div>
+          <div class="text-xs font-mono text-emerald mt-1">In-Memory Tree-Sitter & Git</div>
+          <p class="text-xs text-muted mt-2">Indexes symbols, maps caller/callee graphs, calculates blast radius up to depth 3 with trace_impact, and provides line-sliced surgical code slices.</p>
+        </div>
+      </div>
+
+      <!-- AST Symbol & Impact Tracer Interactive Component -->
+      <div class="surface-card mt-8" style="padding: 24px;">
+        <div class="card-header flex-between" style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <span class="badge badge-emerald">INTERACTIVE TRACER</span>
+            <h3 class="card-title mt-2">trace_impact & trace_symbol AST Graph</h3>
+          </div>
+          <div class="flex-center gap-2" style="display: flex; gap: 8px;">
+            <button class="btn btn-primary btn-sm" data-trace-target="AuthSession">AuthSession</button>
+            <button class="btn btn-secondary btn-sm" data-trace-target="CheckoutButton">CheckoutButton</button>
+            <button class="btn btn-secondary btn-sm" data-trace-target="analyzeMetrics">analyzeMetrics</button>
+          </div>
+        </div>
+
+        <div class="grid-split-50-50 mt-4 gap-6">
+          <div>
+            <canvas id="tracer-graph-canvas" width="500" height="240" style="width: 100%; height: 240px; background: #0c0d10; border: 1px solid #1f222a; border-radius: 6px;"></canvas>
+          </div>
+          <div>
+            <div class="flex-between" style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <span class="text-xs text-muted" id="tracer-symbol-kind">CLASS</span>
+                <div class="font-mono" style="font-size: 18px; font-weight: 700; color: #60a5fa;" id="tracer-symbol-name">AuthSession</div>
+                <div class="text-xs text-muted font-mono" id="tracer-symbol-file">src/auth/session.ts</div>
+              </div>
+              <div style="text-align: right;">
+                <span class="badge badge-amber" id="tracer-risk-badge">RISK: MEDIUM</span>
+                <div class="font-mono text-xs text-muted mt-1" id="tracer-risk-score">Risk Score: 52/100</div>
+              </div>
+            </div>
+
+            <div class="text-xs text-muted mt-4" id="tracer-summary-text">
+              Direct session handler touched by 4 routes. Changing token verification impacts active cookie rotation and WebSocket auth gateways.
+            </div>
+
+            <div class="grid-2 gap-4 mt-4 text-xs font-mono">
+              <div style="background: #09090b; padding: 10px; border-radius: 4px; border: 1px solid #1f222a;">
+                <div class="text-muted mb-1">CALLERS:</div>
+                <div id="tracer-callers-list" style="color: #34d399;">loginHandler()<br>apiAuthMiddleware()<br>wsHandshake()</div>
+              </div>
+              <div style="background: #09090b; padding: 10px; border-radius: 4px; border: 1px solid #1f222a;">
+                <div class="text-muted mb-1">CALLEES / DEPS:</div>
+                <div id="tracer-callees-list" style="color: #60a5fa;">jwtVerify()<br>redisStore.get()<br>rotateRefreshToken()</div>
+              </div>
+            </div>
+            <div class="text-xs font-mono text-muted mt-2">
+              AFFECTED ROUTES: <span id="tracer-routes-list" style="color: #fff;">/api/auth/login, /api/auth/refresh, /ws/stream</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tools Matrix (13 Tools) -->
+  <section id="tools" class="section hairline-top">
+    <div class="container">
+      <div class="section-header text-center">
+        <div class="eyebrow">Deterministic API</div>
+        <h2 class="section-title">13 Model Context Protocol Tools</h2>
+        <p class="section-desc">Categorized tools exposed via JSON-RPC stdio, Server-Sent Events, and REST.</p>
+      </div>
+
+      <div class="grid-3 gap-4">
+        <div class="surface-card">
+          <div class="card-header">
+            <span class="badge badge-blue">Web Inspection & Layout</span>
+          </div>
+          <div class="mt-4" style="display: flex; flex-direction: column; gap: 14px;">
+            <div style="border-top: 1px solid #1f222a; padding-top: 10px;">
+              <div class="font-mono" style="font-weight: 700; color: #60a5fa; font-size: 13px;">inspect_website</div>
+              <div class="text-xs font-mono text-muted mt-1">url, viewport?, includeWireframeSvg?, includeA11y?, allowLocalhost?</div>
+              <div class="text-xs text-muted mt-1" style="color: #a1a1aa;">Extracts full layout tree, computed box models, design tokens, WCAG contrast audits, and vector wireframe SVGs.</div>
+            </div><div style="border-top: 1px solid #1f222a; padding-top: 10px;">
+              <div class="font-mono" style="font-weight: 700; color: #60a5fa; font-size: 13px;">inspect_page</div>
+              <div class="text-xs font-mono text-muted mt-1">url?, compact?, viewport?</div>
+              <div class="text-xs text-muted mt-1" style="color: #a1a1aa;">Inspects the active session app with token-efficient output options for iterative agent loops.</div>
+            </div><div style="border-top: 1px solid #1f222a; padding-top: 10px;">
+              <div class="font-mono" style="font-weight: 700; color: #60a5fa; font-size: 13px;">capture_screenshots</div>
+              <div class="text-xs font-mono text-muted mt-1">url, allowLocalhost?</div>
+              <div class="text-xs text-muted mt-1" style="color: #a1a1aa;">Captures synchronized dual viewports: Desktop (1440x900) and Mobile (390x844).</div>
+            </div>
+          </div>
+        </div><div class="surface-card">
+          <div class="card-header">
+            <span class="badge badge-blue">Source Correlation & Verification</span>
+          </div>
+          <div class="mt-4" style="display: flex; flex-direction: column; gap: 14px;">
+            <div style="border-top: 1px solid #1f222a; padding-top: 10px;">
+              <div class="font-mono" style="font-weight: 700; color: #60a5fa; font-size: 13px;">find_ui_source</div>
+              <div class="text-xs font-mono text-muted mt-1">projectPath, selector?, tag?, textSnippet?, currentRoute?</div>
+              <div class="text-xs text-muted mt-1" style="color: #a1a1aa;">Correlates rendered DOM nodes directly to JSX/TSX components and exact line numbers.</div>
+            </div><div style="border-top: 1px solid #1f222a; padding-top: 10px;">
+              <div class="font-mono" style="font-weight: 700; color: #60a5fa; font-size: 13px;">verify_change</div>
+              <div class="text-xs font-mono text-muted mt-1">before, after, beforeUrl?, afterUrl?</div>
+              <div class="text-xs text-muted mt-1" style="color: #a1a1aa;">Compares layout states before and after code edits, validating resolved bugs and flagging layout regressions.</div>
+            </div><div style="border-top: 1px solid #1f222a; padding-top: 10px;">
+              <div class="font-mono" style="font-weight: 700; color: #60a5fa; font-size: 13px;">get_context</div>
+              <div class="text-xs font-mono text-muted mt-1">selector?, textSnippet?, tag?, urlOrRoute?, inspectionResult?</div>
+              <div class="text-xs text-muted mt-1" style="color: #a1a1aa;">Unified token-efficient payload combining element bounding box, layout defects, source candidates, and blast radius.</div>
+            </div><div style="border-top: 1px solid #1f222a; padding-top: 10px;">
+              <div class="font-mono" style="font-weight: 700; color: #60a5fa; font-size: 13px;">connect_project</div>
+              <div class="text-xs font-mono text-muted mt-1">repoPath, appUrl?, branch?</div>
+              <div class="text-xs text-muted mt-1" style="color: #a1a1aa;">Binds a local repository path to a running application URL to maintain an active inspection session.</div>
+            </div>
+          </div>
+        </div><div class="surface-card">
+          <div class="card-header">
+            <span class="badge badge-blue">Codebase & AST Intelligence</span>
+          </div>
+          <div class="mt-4" style="display: flex; flex-direction: column; gap: 14px;">
+            <div style="border-top: 1px solid #1f222a; padding-top: 10px;">
+              <div class="font-mono" style="font-weight: 700; color: #60a5fa; font-size: 13px;">index_repository</div>
+              <div class="text-xs font-mono text-muted mt-1">urlOrPath, branch?, authToken?</div>
+              <div class="text-xs text-muted mt-1" style="color: #a1a1aa;">Performs ephemeral repository acquisition, parses AST symbols, builds file trees, and extracts routes.</div>
+            </div><div style="border-top: 1px solid #1f222a; padding-top: 10px;">
+              <div class="font-mono" style="font-weight: 700; color: #60a5fa; font-size: 13px;">search_codebase</div>
+              <div class="text-xs font-mono text-muted mt-1">query, kind?, limit?</div>
+              <div class="text-xs text-muted mt-1" style="color: #a1a1aa;">Executes structural AST searches for functions, classes, interfaces, and API endpoints.</div>
+            </div><div style="border-top: 1px solid #1f222a; padding-top: 10px;">
+              <div class="font-mono" style="font-weight: 700; color: #60a5fa; font-size: 13px;">get_file</div>
+              <div class="text-xs font-mono text-muted mt-1">filePath, startLine?, endLine?</div>
+              <div class="text-xs text-muted mt-1" style="color: #a1a1aa;">Surgically retrieves precise file line ranges (e.g. lines 40-75) without polluting context with full files.</div>
+            </div><div style="border-top: 1px solid #1f222a; padding-top: 10px;">
+              <div class="font-mono" style="font-weight: 700; color: #60a5fa; font-size: 13px;">trace_symbol</div>
+              <div class="text-xs font-mono text-muted mt-1">symbolName</div>
+              <div class="text-xs text-muted mt-1" style="color: #a1a1aa;">Traces definitions, direct importers, re-exports, callers, callees, and route handlers for a target symbol.</div>
+            </div><div style="border-top: 1px solid #1f222a; padding-top: 10px;">
+              <div class="font-mono" style="font-weight: 700; color: #60a5fa; font-size: 13px;">trace_impact</div>
+              <div class="text-xs font-mono text-muted mt-1">target, repoIdentifier?</div>
+              <div class="text-xs text-muted mt-1" style="color: #a1a1aa;">Calculates direct and transitive blast radius, affected HTTP endpoints, and assign risk levels (LOW/MEDIUM/HIGH).</div>
+            </div><div style="border-top: 1px solid #1f222a; padding-top: 10px;">
+              <div class="font-mono" style="font-weight: 700; color: #60a5fa; font-size: 13px;">explain_architecture</div>
+              <div class="text-xs font-mono text-muted mt-1">none</div>
+              <div class="text-xs text-muted mt-1" style="color: #a1a1aa;">Summarizes tech stack, package dependencies, main entry points, and structural directory taxonomy.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Supported Ecosystem (70+ Agents) -->
+  <section id="agents" class="section hairline-top">
+    <div class="container">
+      <div class="section-header text-center">
+        <div class="eyebrow">Compatibility Matrix</div>
+        <h2 class="section-title">Native Support for 70+ AI Agents</h2>
+        <p class="section-desc">Standardized on the open Model Context Protocol and Agent Skills specification. Configured automatically with the universal installer.</p>
+      </div>
+
+      <div class="surface-card" style="padding: 0; overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+          <thead>
+            <tr style="border-bottom: 1px solid #27272a; background: #0c0d10;">
+              <th style="padding: 14px 18px; color: #8e95a5; font-weight: 600;">AGENT / FRAMEWORK</th>
+              <th style="padding: 14px 18px; color: #8e95a5; font-weight: 600;">ORGANIZATION</th>
+              <th style="padding: 14px 18px; color: #8e95a5; font-weight: 600;">INTEGRATION</th>
+              <th style="padding: 14px 18px; color: #8e95a5; font-weight: 600;">CONFIGURED LOCATION</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid #1f222a;">
+              <td style="padding: 12px 18px; font-weight: 700; color: #fff;">Google DeepMind Antigravity</td>
+              <td style="padding: 12px 18px; color: #a1a1aa;">agy</td>
+              <td style="padding: 12px 18px;"><span class="badge badge-blue">Native MCP + Agent Skill</span></td>
+              <td style="padding: 12px 18px; font-family: monospace; font-size: 11px; color: #71717a;">~/.gemini/config/mcp_config.json</td>
+            </tr><tr style="border-bottom: 1px solid #1f222a;">
+              <td style="padding: 12px 18px; font-weight: 700; color: #fff;">Anthropic Claude Code & Desktop</td>
+              <td style="padding: 12px 18px; color: #a1a1aa;">claude</td>
+              <td style="padding: 12px 18px;"><span class="badge badge-blue">MCP + Agent Skill</span></td>
+              <td style="padding: 12px 18px; font-family: monospace; font-size: 11px; color: #71717a;">~/.claude.json</td>
+            </tr><tr style="border-bottom: 1px solid #1f222a;">
+              <td style="padding: 12px 18px; font-weight: 700; color: #fff;">OpenAI Codex CLI & ChatGPT</td>
+              <td style="padding: 12px 18px; color: #a1a1aa;">codex</td>
+              <td style="padding: 12px 18px;"><span class="badge badge-blue">MCP + Universal Skill</span></td>
+              <td style="padding: 12px 18px; font-family: monospace; font-size: 11px; color: #71717a;">~/.codex/mcp.json</td>
+            </tr><tr style="border-bottom: 1px solid #1f222a;">
+              <td style="padding: 12px 18px; font-weight: 700; color: #fff;">Anysphere Cursor</td>
+              <td style="padding: 12px 18px; color: #a1a1aa;">cursor</td>
+              <td style="padding: 12px 18px;"><span class="badge badge-blue">MCP + Agent Skill</span></td>
+              <td style="padding: 12px 18px; font-family: monospace; font-size: 11px; color: #71717a;">~/.config/Cursor/User/mcp.json</td>
+            </tr><tr style="border-bottom: 1px solid #1f222a;">
+              <td style="padding: 12px 18px; font-weight: 700; color: #fff;">OpenClaw</td>
+              <td style="padding: 12px 18px; color: #a1a1aa;">openclaw</td>
+              <td style="padding: 12px 18px;"><span class="badge badge-blue">Native MCP + Skill</span></td>
+              <td style="padding: 12px 18px; font-family: monospace; font-size: 11px; color: #71717a;">~/.openclaw/mcp.json</td>
+            </tr><tr style="border-bottom: 1px solid #1f222a;">
+              <td style="padding: 12px 18px; font-weight: 700; color: #fff;">Nous Research Hermes</td>
+              <td style="padding: 12px 18px; color: #a1a1aa;">hermes</td>
+              <td style="padding: 12px 18px;"><span class="badge badge-blue">MCP + Skill</span></td>
+              <td style="padding: 12px 18px; font-family: monospace; font-size: 11px; color: #71717a;">~/.hermes/mcp.json</td>
+            </tr><tr style="border-bottom: 1px solid #1f222a;">
+              <td style="padding: 12px 18px; font-weight: 700; color: #fff;">Roo Code & Cline</td>
+              <td style="padding: 12px 18px; color: #a1a1aa;">cline</td>
+              <td style="padding: 12px 18px;"><span class="badge badge-blue">Universal Skill + MCP</span></td>
+              <td style="padding: 12px 18px; font-family: monospace; font-size: 11px; color: #71717a;">~/.config/Code/User/mcp.json</td>
+            </tr><tr style="border-bottom: 1px solid #1f222a;">
+              <td style="padding: 12px 18px; font-weight: 700; color: #fff;">Codeium Windsurf</td>
+              <td style="padding: 12px 18px; color: #a1a1aa;">windsurf</td>
+              <td style="padding: 12px 18px;"><span class="badge badge-blue">Native MCP</span></td>
+              <td style="padding: 12px 18px; font-family: monospace; font-size: 11px; color: #71717a;">~/.codeium/windsurf/mcp_config.json</td>
+            </tr><tr style="border-bottom: 1px solid #1f222a;">
+              <td style="padding: 12px 18px; font-weight: 700; color: #fff;">All-Hands AI OpenHands</td>
+              <td style="padding: 12px 18px; color: #a1a1aa;">openhands</td>
+              <td style="padding: 12px 18px;"><span class="badge badge-blue">Universal Skill</span></td>
+              <td style="padding: 12px 18px; font-family: monospace; font-size: 11px; color: #71717a;">~/.openhands/skills/prism/</td>
+            </tr><tr style="border-bottom: 1px solid #1f222a;">
+              <td style="padding: 12px 18px; font-weight: 700; color: #fff;">Universal Agent Skills</td>
+              <td style="padding: 12px 18px; color: #a1a1aa;">replit / zed / warp / devin</td>
+              <td style="padding: 12px 18px;"><span class="badge badge-blue">Universal Skill Specification</span></td>
+              <td style="padding: 12px 18px; font-family: monospace; font-size: 11px; color: #71717a;">~/.agents/skills/prism/</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="text-center mt-6 text-xs text-muted">
+        Also configures OpenHands, Continue, Amp, Replit, Zed, Warp, Loaf, Kimi, and all <code>agentskills.io</code> compatible runners.
+      </div>
+    </div>
+  </section>
+
+  <!-- ChatGPT Custom Actions -->
+  <section class="section hairline-top">
+    <div class="container">
+      <div class="section-header text-center">
+        <div class="eyebrow">Everywhere Access</div>
+        <h2 class="section-title">ChatGPT Custom Actions on Mobile & Web</h2>
+        <p class="section-desc">Use Prism from iOS, Android, or chatgpt.com using OpenAPI 3.0 Custom Actions.</p>
+      </div>
+
+      <div class="grid-split-60-40 gap-6">
+        <div class="surface-card">
+          <h3 class="card-title mb-4">Native OpenAPI 3.1 Contract</h3>
+          <p class="text-xs text-muted mb-4">
+            Run Prism over HTTP to expose interactive visual inspection to ChatGPT on iOS, Android, and web without installing local packages on your phone:
+          </p>
+          <div class="cli-box">
+            <span class="cli-prompt">$</span>
+            <code class="cli-cmd">npm run start:http  # starts HTTP on port 3000 with /ui inspector</code>
+          </div>
+          <div class="text-xs font-mono text-muted mt-4">
+            Import schema URL: <code class="text-blue">http://localhost:3000/openapi.json</code>
+          </div>
+        </div>
+
+        <div class="surface-card flex-center flex-column text-center" style="padding: 28px;">
+          <div class="badge badge-emerald mb-2">STANDALONE WEB UI</div>
+          <h4 style="font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 8px;">Interactive Visual Playground</h4>
+          <p class="text-xs text-muted mb-4">
+            Navigate to <code>/ui</code> in your browser to inspect dual viewports, test box model dimensions, and preview vector wireframe SVGs interactively.
+          </p>
+          <a href="https://github.com/whysooraj/prism" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">Read Setup Guide &rarr;</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Universal Quickstart Installer -->
+  <section id="quickstart" class="section hairline-top">
+    <div class="container text-center">
+      <div class="section-header text-center">
+        <div class="eyebrow">Zero Configuration Setup</div>
+        <h2 class="section-title">Get Started in 10 Seconds</h2>
+        <p class="section-desc">One command sets up native MCP server configs and universal Agent Skills.</p>
+      </div>
+
+      <div class="surface-card" style="max-width: 760px; margin: 0 auto; text-align: left;">
+        <div class="flex-between mb-4" style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="flex-center gap-2" style="display: flex; gap: 8px;">
+            <button class="btn btn-primary btn-sm" data-install-mode="interactive">Interactive</button>
+            <button class="btn btn-secondary btn-sm" data-install-mode="global">Global (-g -y)</button>
+            <button class="btn btn-secondary btn-sm" data-install-mode="local">Local Project (-l -y)</button>
+            <button class="btn btn-secondary btn-sm" data-install-mode="docker">Docker</button>
+          </div>
+          <span class="badge badge-blue font-mono" id="installer-scope-note">Interactive Scope Prompt</span>
+        </div>
+
+        <div class="cli-box">
+          <span class="cli-prompt">$</span>
+          <code class="cli-cmd" id="installer-command-text">curl -fsSL https://raw.githubusercontent.com/whysooraj/prism/main/install.sh | bash</code>
+          <button class="cli-copy-btn" id="copy-installer-btn">COPY</button>
+        </div>
+
+        <div class="text-xs text-muted mt-4" style="line-height: 1.6;">
+          Automatically detects installed agents, creates MCP entries, and installs universal Agent Skills without manual JSON editing.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="section hairline-top" style="padding: 40px 0; background: #050608;">
+    <div class="container flex-between" style="display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <div class="brand-title" style="font-size: 16px; font-weight: 700; color: #fff;">Prism</div>
+        <div class="text-xs text-muted mt-1">Deterministic web layout inspection and structural repository intelligence engine for AI coding agents.</div>
+        <div class="text-xs text-dim mt-2" style="color: #555;">MIT License. Engineered by whysooraj.</div>
+      </div>
+
+      <div class="flex-center gap-4" style="display: flex; gap: 16px;">
+        <a href="https://github.com/whysooraj/prism" target="_blank" rel="noopener" class="nav-link text-xs">GitHub Repository &rarr;</a><a href="https://modelcontextprotocol.io" target="_blank" rel="noopener" class="nav-link text-xs">Model Context Protocol &rarr;</a><a href="https://agentskills.io" target="_blank" rel="noopener" class="nav-link text-xs">Agent Skills Spec &rarr;</a><a href="http://localhost:3000/ui" target="_blank" rel="noopener" class="nav-link text-xs">Interactive Inspector UI &rarr;</a><a href="/openapi.json" target="_blank" rel="noopener" class="nav-link text-xs">OpenAPI Specification &rarr;</a>
+      </div>
+    </div>
+  </footer>
+
+  <div id="prism-toast-container" style="position: fixed; bottom: 24px; right: 24px; z-index: 9999;"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,387 @@
+{
+  "meta": {
+    "title": "Prism | Deterministic Web Layout & Repository Intelligence Engine for AI Agents",
+    "description": "Deterministic layout inspection, box-model extraction, WCAG audits, and AST repository intelligence for 70+ AI coding agents via MCP.",
+    "version": "1.0.0",
+    "github_repo": "https://github.com/whysooraj/prism"
+  },
+  "navigation": {
+    "brand": "Prism",
+    "tagline": "MCP Engine for Coding Agents",
+    "status_pill": {
+      "state": "operational",
+      "text": "Model Context Protocol stdio & SSE ready"
+    },
+    "links": [
+      { "label": "Engine", "href": "#engine" },
+      { "label": "Live Inspector", "href": "#interactive-demo" },
+      { "label": "Pipeline", "href": "#architecture" },
+      { "label": "13 Tools", "href": "#tools" },
+      { "label": "Supported Agents", "href": "#agents" },
+      { "label": "Quickstart", "href": "#quickstart" }
+    ],
+    "cta": {
+      "label": "GitHub",
+      "href": "https://github.com/whysooraj/prism",
+      "target": "_blank"
+    }
+  },
+  "hero": {
+    "badge": "Universal Model Context Protocol + Agent Skills Spec",
+    "headline": "Deterministic web layout inspection and structural codebase intelligence for AI agents.",
+    "subheadline": "Stop feeding assistants uncomputed HTML and downscaled screenshots. Prism delivers exact CSS box models, WCAG audits, DOM-to-source mapping, and AST symbol tracing directly into agent context.",
+    "quickstart": {
+      "label": "One-Line Universal Installer",
+      "command": "curl -fsSL https://raw.githubusercontent.com/whysooraj/prism/main/install.sh | bash",
+      "alt_flags": [
+        { "flag": "-g -y", "desc": "Install globally across all detected agents" },
+        { "flag": "-l -y", "desc": "Install locally in current project" }
+      ]
+    },
+    "metrics": [
+      { "label": "Deterministic Tools", "value": "13 MCP Tools" },
+      { "label": "Supported Agents", "value": "70+ AI Frameworks" },
+      { "label": "Context Optimization", "value": "86% Token Reduction" },
+      { "label": "Protocol Support", "value": "stdio, SSE & REST" }
+    ]
+  },
+  "interactive_demo": {
+    "section_id": "interactive-demo",
+    "kicker": "Deterministic Inspection in Action",
+    "title": "Mathematical Layout & Source Correlation",
+    "description": "Inspect live web elements and correlate them directly to source code without token-heavy full-page dumps or fuzzy vision models.",
+    "tabs": [
+      {
+        "id": "box_model_radar",
+        "title": "Box Model & 2D Spatial Radar",
+        "scenario": "Header Navigation Element Inspection",
+        "inspector_url": "http://localhost:3000/ui",
+        "box_metrics": {
+          "tag": "nav.header-nav",
+          "computed_rect": { "x": 0, "y": 0, "width": 1440, "height": 64 },
+          "padding": { "top": 12, "right": 32, "bottom": 12, "left": 32 },
+          "margin": { "top": 0, "right": 0, "bottom": 0, "left": 0 },
+          "border": { "top": 0, "right": 0, "bottom": 1, "left": 0, "color": "rgba(255,255,255,0.08)" }
+        },
+        "ascii_radar": [
+          "+------------------------------------------------------------------------+",
+          "| [nav.header-nav] width: 1440px | height: 64px                          |",
+          "| [Logo] (x:32, w:110) -------- (gap: 32px) ------- [Links] (x:174, w:420) |",
+          "|                                                   [CTA Button] (x:1280)|",
+          "+------------------------------------------------------------------------+"
+        ],
+        "diagnostics": [
+          { "type": "spacing", "status": "pass", "detail": "Complies with 8pt spatial grid (64px height, 32px horizontal padding)" },
+          { "type": "touch_target", "status": "pass", "detail": "Interactive link elements meet 44x44px minimum target envelope" }
+        ]
+      },
+      {
+        "id": "wcag_audit",
+        "title": "WCAG AAA Deterministic Audit",
+        "scenario": "Action Button Contrast & Typography Validation",
+        "inspector_url": "http://localhost:3000/ui",
+        "color_tokens": {
+          "foreground": "#F4F4F5",
+          "background": "#18181B",
+          "ratio": "13.4:1",
+          "standard": "WCAG AAA (Minimum 7.0:1 requirement passed)",
+          "font_family": "Geist Mono, JetBrains Mono, monospace",
+          "font_size": "13px",
+          "font_weight": "500",
+          "line_height": "20px"
+        },
+        "audit_checklist": [
+          { "rule": "Color Contrast (AAA)", "status": "pass", "measured": "13.4:1 ratio", "threshold": ">= 7.0:1" },
+          { "rule": "Text Clipping", "status": "pass", "measured": "0 overflowed text elements", "threshold": "0px clipping" },
+          { "rule": "Layer Occlusion", "status": "pass", "measured": "No sibling z-index collision", "threshold": "0 occluded nodes" }
+        ]
+      },
+      {
+        "id": "dom_to_source",
+        "title": "DOM-to-Source Mapping (find_ui_source)",
+        "scenario": "Locating Rendered Button in TypeScript Component",
+        "query": "find_ui_source({ selector: 'button.cta-primary', textSnippet: 'Get Started' })",
+        "result": {
+          "matched_file": "src/components/HeaderNav.tsx",
+          "line_range": "42-51",
+          "confidence": 0.94,
+          "source_slice": [
+            "42 | export function HeaderNav({ onOpenQuickstart }: HeaderNavProps) {",
+            "43 |   return (",
+            "44 |     <nav className=\"flex items-center justify-between px-8 py-3\">",
+            "45 |       <Logo />",
+            "46 |       <div className=\"flex items-center gap-8\">",
+            "47 |         <Button",
+            "48 |           variant=\"primary\"",
+            "49 |           onClick={onOpenQuickstart}",
+            "50 |           className=\"cta-primary h-9 px-4 text-xs font-mono\"",
+            "51 |         >Get Started</Button>"
+          ]
+        }
+      }
+    ]
+  },
+  "the_problem": {
+    "section_id": "problem",
+    "kicker": "The Context Vacuum",
+    "title": "Why Raw HTML and Downscaled Screenshots Blind AI Models",
+    "summary": "Standard LLM toolkits provide agents with low-fidelity approximations that force models to hallucinate layout dimensions and read codebases through unindexed string search.",
+    "comparisons": [
+      {
+        "domain": "Web Inspection",
+        "flawed_approach": {
+          "title": "Uncomputed HTML & Vision Screenshots",
+          "points": [
+            "Raw DOM text omits computed CSS cascade, box-model rects, and render coordinates.",
+            "Screenshots compressed to 1024px blur micro-typography, subpixel padding, and borders.",
+            "Vision models cannot mathematically measure WCAG contrast ratios or 8pt grid alignment."
+          ]
+        },
+        "prism_solution": {
+          "title": "Deterministic Headless Layout Extraction",
+          "points": [
+            "Extracts real computed values directly from Chromium layout engine.",
+            "Generates 2D ASCII spatial radars and exact box models: padding, margin, bounds.",
+            "Computes exact WCAG AAA color contrast ratios and flags layer occlusion collisions."
+          ]
+        }
+      },
+      {
+        "domain": "Codebase Navigation",
+        "flawed_approach": {
+          "title": "Full-File Dumps & Naive Grep",
+          "points": [
+            "Dumping entire files burns thousands of context tokens and triggers attention drift.",
+            "Text regex cannot trace AST relationships, inheritance, or route decorators.",
+            "Agents cannot deduce which source file produced a rendered DOM element."
+          ]
+        },
+        "prism_solution": {
+          "title": "AST Symbol Indexing & Line-Sliced Retrieval",
+          "points": [
+            "Fast tree-sitter AST parser extracts function signatures, classes, and exported routes.",
+            "get_file delivers line-sliced fragments with line numbers, eliminating context pollution.",
+            "find_ui_source correlates rendered DOM tags and text directly to JSX/TSX source lines."
+          ]
+        }
+      }
+    ]
+  },
+  "architecture": {
+    "section_id": "architecture",
+    "kicker": "System Design",
+    "title": "Tri-Core Intelligence Pipeline",
+    "description": "Prism operates as a high-throughput bridge connecting external AI agents to deterministic web runtime and AST repository indexes.",
+    "pipeline_steps": [
+      {
+        "step": "01",
+        "name": "MCP Transport Layer",
+        "protocol": "stdio / SSE / REST",
+        "description": "Exposes standard Model Context Protocol tools to agents like Antigravity, Claude Code, Cursor, and OpenClaw, with zero agent-side modifications."
+      },
+      {
+        "step": "02",
+        "name": "Web Inspection Pipeline",
+        "runtime": "Headless Chromium",
+        "description": "Navigates target URLs, evaluates computed styles, runs WCAG audits, computes 2D spatial radars, and renders vector wireframe SVGs."
+      },
+      {
+        "step": "03",
+        "name": "Correlation & Verification Engine",
+        "runtime": "DOM <-> Source Matcher",
+        "description": "Maps rendered selectors to code lines with find_ui_source, and computes differential layout regressions across state transitions with verify_change."
+      },
+      {
+        "step": "04",
+        "name": "AST Repository Pipeline",
+        "runtime": "In-Memory Tree-Sitter & Git",
+        "description": "Indexes symbols, maps caller/callee graphs, calculates blast radius up to depth 3 with trace_impact, and provides line-sliced surgical code slices."
+      }
+    ]
+  },
+  "tools_matrix": {
+    "section_id": "tools",
+    "kicker": "Deterministic API",
+    "title": "13 Model Context Protocol Tools",
+    "description": "Categorized tools exposed via JSON-RPC stdio, Server-Sent Events, and REST.",
+    "categories": [
+      {
+        "category": "Web Inspection & Layout",
+        "tools": [
+          {
+            "name": "inspect_website",
+            "parameters": "url, viewport?, includeWireframeSvg?, includeA11y?, allowLocalhost?",
+            "output": "WebInspectionResult (JSON)",
+            "description": "Extracts full layout tree, computed box models, design tokens, WCAG contrast audits, and vector wireframe SVGs."
+          },
+          {
+            "name": "inspect_page",
+            "parameters": "url?, compact?, viewport?",
+            "output": "WebInspectionResult or Compact Summary",
+            "description": "Inspects the active session app with token-efficient output options for iterative agent loops."
+          },
+          {
+            "name": "capture_screenshots",
+            "parameters": "url, allowLocalhost?",
+            "output": "Base64 PNGs",
+            "description": "Captures synchronized dual viewports: Desktop (1440x900) and Mobile (390x844)."
+          }
+        ]
+      },
+      {
+        "category": "Source Correlation & Verification",
+        "tools": [
+          {
+            "name": "find_ui_source",
+            "parameters": "projectPath, selector?, tag?, textSnippet?, currentRoute?",
+            "output": "FindUiSourceResult (Candidate lines + Confidence)",
+            "description": "Correlates rendered DOM nodes directly to JSX/TSX components and exact line numbers."
+          },
+          {
+            "name": "verify_change",
+            "parameters": "before, after, beforeUrl?, afterUrl?",
+            "output": "ChangeVerificationResult (Diff + Regressions)",
+            "description": "Compares layout states before and after code edits, validating resolved bugs and flagging layout regressions."
+          },
+          {
+            "name": "get_context",
+            "parameters": "selector?, textSnippet?, tag?, urlOrRoute?, inspectionResult?",
+            "output": "CompactTaskContext (JSON)",
+            "description": "Unified token-efficient payload combining element bounding box, layout defects, source candidates, and blast radius."
+          },
+          {
+            "name": "connect_project",
+            "parameters": "repoPath, appUrl?, branch?",
+            "output": "ProjectSession (JSON)",
+            "description": "Binds a local repository path to a running application URL to maintain an active inspection session."
+          }
+        ]
+      },
+      {
+        "category": "Codebase & AST Intelligence",
+        "tools": [
+          {
+            "name": "index_repository",
+            "parameters": "urlOrPath, branch?, authToken?",
+            "output": "RepoIndexSummary (JSON)",
+            "description": "Performs ephemeral repository acquisition, parses AST symbols, builds file trees, and extracts routes."
+          },
+          {
+            "name": "search_codebase",
+            "parameters": "query, kind?, limit?",
+            "output": "CodeSymbol[]",
+            "description": "Executes structural AST searches for functions, classes, interfaces, and API endpoints."
+          },
+          {
+            "name": "get_file",
+            "parameters": "filePath, startLine?, endLine?",
+            "output": "Line-sliced source text with numbered prefixes",
+            "description": "Surgically retrieves precise file line ranges (e.g. lines 40-75) without polluting context with full files."
+          },
+          {
+            "name": "trace_symbol",
+            "parameters": "symbolName",
+            "output": "SymbolTrace (JSON)",
+            "description": "Traces definitions, direct importers, re-exports, callers, callees, and route handlers for a target symbol."
+          },
+          {
+            "name": "trace_impact",
+            "parameters": "target, repoIdentifier?",
+            "output": "ImpactAnalysisResult (Blast radius depth <= 3, risk score)",
+            "description": "Calculates direct and transitive blast radius, affected HTTP endpoints, and assign risk levels (LOW/MEDIUM/HIGH)."
+          },
+          {
+            "name": "explain_architecture",
+            "parameters": "none",
+            "output": "ArchitectureSummary (JSON)",
+            "description": "Summarizes tech stack, package dependencies, main entry points, and structural directory taxonomy."
+          }
+        ]
+      }
+    ]
+  },
+  "ecosystem": {
+    "section_id": "agents",
+    "kicker": "Compatibility Matrix",
+    "title": "Native Support for 70+ AI Agents",
+    "description": "Standardized on the open Model Context Protocol and Agent Skills specification. Configured automatically with the universal installer.",
+    "agents": [
+      { "name": "Google DeepMind Antigravity", "binary": "agy", "type": "Native MCP + Agent Skill", "config_target": "~/.gemini/config/mcp_config.json" },
+      { "name": "Anthropic Claude Code & Desktop", "binary": "claude", "type": "MCP + Agent Skill", "config_target": "~/.claude.json" },
+      { "name": "OpenAI Codex CLI & ChatGPT", "binary": "codex", "type": "MCP + Universal Skill", "config_target": "~/.codex/mcp.json" },
+      { "name": "Anysphere Cursor", "binary": "cursor", "type": "MCP + Agent Skill", "config_target": "~/.config/Cursor/User/mcp.json" },
+      { "name": "OpenClaw", "binary": "openclaw", "type": "Native MCP + Skill", "config_target": "~/.openclaw/mcp.json" },
+      { "name": "Nous Research Hermes", "binary": "hermes", "type": "MCP + Skill", "config_target": "~/.hermes/mcp.json" },
+      { "name": "Roo Code & Cline", "binary": "cline", "type": "Universal Skill + MCP", "config_target": "~/.config/Code/User/mcp.json" },
+      { "name": "Codeium Windsurf", "binary": "windsurf", "type": "Native MCP", "config_target": "~/.codeium/windsurf/mcp_config.json" },
+      { "name": "All-Hands AI OpenHands", "binary": "openhands", "type": "Universal Skill", "config_target": "~/.openhands/skills/prism/" },
+      { "name": "Universal Agent Skills", "binary": "replit / zed / warp / devin", "type": "Universal Skill Specification", "config_target": "~/.agents/skills/prism/" }
+    ]
+  },
+  "chatgpt_actions": {
+    "section_id": "chatgpt-actions",
+    "kicker": "Everywhere Access",
+    "title": "ChatGPT Custom Actions on Mobile & Web",
+    "description": "Use Prism from iOS, Android, or chatgpt.com using OpenAPI 3.0 Custom Actions.",
+    "steps": [
+      {
+        "step": "01",
+        "title": "Start Prism HTTP Server",
+        "command": "npm run start:http",
+        "detail": "Launches the REST & SSE API server on port 3000 alongside the interactive visual inspector at /ui."
+      },
+      {
+        "step": "02",
+        "title": "Expose Tunnel or Deploy Docker",
+        "command": "cloudflared tunnel --url http://localhost:3000",
+        "detail": "Generates a secure HTTPS tunnel endpoint, or deploy the production Dockerfile to Fly.io or Railway."
+      },
+      {
+        "step": "03",
+        "title": "Import openapi.json in ChatGPT",
+        "command": "https://your-domain.com/openapi.json",
+        "detail": "Paste openapi.json into ChatGPT GPT Builder under Configure > Create New Action. Set authentication to None."
+      },
+      {
+        "step": "04",
+        "title": "Prompt from Mobile Device",
+        "command": "Inspect https://news.ycombinator.com and give me the WCAG contrast breakdown.",
+        "detail": "ChatGPT invokes Prism tools remotely, rendering deterministic box models, contrast scores, and AST route maps."
+      }
+    ]
+  },
+  "quickstart_section": {
+    "section_id": "quickstart",
+    "kicker": "Zero Configuration Setup",
+    "title": "Get Started in 10 Seconds",
+    "install_methods": [
+      {
+        "name": "One-Line Universal Installer (Recommended)",
+        "snippet": "curl -fsSL https://raw.githubusercontent.com/whysooraj/prism/main/install.sh | bash",
+        "note": "Interactively prompts for Global vs Project scope and auto-detects all installed AI coding agents."
+      },
+      {
+        "name": "Non-Interactive / CI Installation",
+        "snippet": "curl -fsSL https://raw.githubusercontent.com/whysooraj/prism/main/install.sh | bash -s -- -g -y",
+        "note": "Installs globally for all detected coding agents automatically."
+      },
+      {
+        "name": "Manual Git Clone & Local Build",
+        "snippet": "git clone https://github.com/whysooraj/prism.git ~/.prism\ncd ~/.prism\nnpm install\nnpm run build",
+        "note": "Compile from source and register 'node ~/.prism/dist/index.js' in your agent's MCP config."
+      }
+    ]
+  },
+  "footer": {
+    "brand": "Prism",
+    "summary": "Deterministic web layout inspection and structural repository intelligence engine for AI coding agents.",
+    "links": [
+      { "label": "GitHub Repository", "href": "https://github.com/whysooraj/prism" },
+      { "label": "Model Context Protocol", "href": "https://modelcontextprotocol.io" },
+      { "label": "Agent Skills Spec", "href": "https://agentskills.io" },
+      { "label": "Interactive Inspector UI", "href": "http://localhost:3000/ui" },
+      { "label": "OpenAPI Specification", "href": "/openapi.json" }
+    ],
+    "license": "MIT License. Engineered by whysooraj."
+  }
+}
